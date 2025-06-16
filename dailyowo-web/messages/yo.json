@@ -1,0 +1,396 @@
+{
+  "common": {
+    "appName": "DailyOwo",
+    "loading": "Iṣẹ́ nlo lọwọ́...",
+    "save": "Fipamọ́",
+    "cancel": "Fagile",
+    "delete": "Paare",
+    "edit": "Ṣatunkọ",
+    "add": "Ṣafikun",
+    "back": "Padà",
+    "next": "Itele",
+    "continue": "Tẹsiwaju",
+    "skip": "Skip",
+    "skipForNow": "Skip for now",
+    "done": "Done",
+    "close": "Close",
+    "yes": "Bẹẹni",
+    "no": "Rara",
+    "or": "or",
+    "and": "and",
+    "currency": "Currency",
+    "amount": "Amount",
+    "date": "Date",
+    "time": "Time",
+    "search": "Search",
+    "filter": "Filter",
+    "settings": "Settings",
+    "profile": "Profile",
+    "logout": "Logout",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "splash": {
+    "tagline": "Your journey to financial freedom"
+  },
+  "auth": {
+    "login": {
+      "title": "Ẹ kú àbọ̀",
+      "subtitle": "Wọlé láti tẹ̀síwájú àtóju owó rẹ",
+      "email": "Ímeèlì",
+      "password": "Ọ̀rọ̀ aṣínà",
+      "forgotPassword": "Ṣé o gbàgbé ọ̀rọ̀ aṣínà?",
+      "signIn": "Wọlé",
+      "noAccount": "Ṣé o ní àkáǹtì?",
+      "signUp": "Forúkọsílẹ̀",
+      "orContinueWith": "Tàbí tẹ̀síwájú pẹ̀lú",
+      "signInWithGoogle": "Tẹ̀síwájú pẹ̀lú Google",
+      "errors": {
+        "invalidCredentials": "Ímeèlì tàbí ọ̀rọ̀ aṣínà kò tọ́",
+        "userNotFound": "A kò rí àkáǹtì pẹ̀lú ímeèlì yìí",
+        "tooManyAttempts": "Ìgbìyànjú pọ̀ jù. Ẹ jọ̀wọ́ gbìyànjú láìpẹ́",
+        "networkError": "Àṣìṣe nẹ́tíwọ̀kì. Ẹ jọ̀wọ́ yẹ ìsopọ̀ rẹ wò"
+      }
+    },
+    "register": {
+      "title": "Ṣẹ̀dá àkáǹtì rẹ",
+      "subtitle": "Darapọ̀ mọ́ DailyOwo kí o sì gba àkóso owó rẹ",
+      "fullName": "Orúkọ Kíkún",
+      "email": "Àdírẹ́sì Ímeèlì",
+      "password": "Ọ̀rọ̀ aṣínà",
+      "confirmPassword": "Jẹ́rìí ọ̀rọ̀ aṣínà",
+      "agreeToTerms": "Mo gbà pẹ̀lú Òfin Ìsẹ́ àti Ètò Àṣírí",
+      "createAccount": "Ṣẹ̀dá Àkáǹtì",
+      "alreadyHaveAccount": "Ṣé o ti ní àkáǹtì?",
+      "signIn": "Wọlé",
+      "orSignUpWith": "Tàbí forúkọsílẹ̀ pẹ̀lú",
+      "signUpWithGoogle": "Tẹ̀síwájú pẹ̀lú Google",
+      "passwordRequirements": {
+        "title": "Ọ̀rọ̀ aṣínà gbọ́dọ̀ ní:",
+        "minLength": "Ó kéré jù àmì mẹ́jọ",
+        "uppercase": "Lẹ́tà ńlá kan",
+        "lowercase": "Lẹ́tà kékeré kan",
+        "number": "Nọ́ńbà kan",
+        "special": "Àmì pàtàkì kan"
+      },
+      "passwordStrength": {
+        "weak": "Aláìlágbára",
+        "fair": "Dáadáa",
+        "good": "Dára",
+        "strong": "Lágbára"
+      },
+      "errors": {
+        "emailInUse": "Ímeèlì yìí ti wà lórí àkọsílẹ̀",
+        "weakPassword": "Ọ̀rọ̀ aṣínà kò lágbára tó",
+        "passwordMismatch": "Àwọn ọ̀rọ̀ aṣínà kò dọ́gba",
+        "invalidEmail": "Ẹ jọ̀wọ́ tẹ ímeèlì tó tọ́",
+        "termsRequired": "O gbọ́dọ̀ gbà pẹ̀lú àwọn òfin"
+      },
+      "success": "Àkáǹtì ti wà ní àṣeyọrí! Ń ṣètò pùrófáìlì rẹ..."
+    },
+    "resetPassword": {
+      "title": "Tún Ọ̀rọ̀ Aṣínà Ṣe",
+      "subtitle": "Tẹ ímeèlì rẹ láti gba ìtọ́sọ́nà",
+      "email": "Àdírẹ́sì Ímeèlì",
+      "sendInstructions": "Fi Ìtọ́sọ́nà Ránṣẹ́",
+      "backToLogin": "Padà sí ìwọlé",
+      "checkEmail": "Yẹ ímeèlì rẹ wò",
+      "emailSent": "A ti fi ìtọ́sọ́nà ránṣẹ́ sí {email}",
+      "didntReceive": "Ṣé o gba ímeèlì náà?",
+      "resend": "Tún ránṣẹ́",
+      "errors": {
+        "userNotFound": "A kò rí àkáǹtì pẹ̀lú ímeèlì yìí",
+        "tooManyRequests": "Ìbéèrè pọ̀ jù. Ẹ jọ̀wọ́ gbìyànjú láìpẹ́"
+      }
+    }
+  },
+  "onboarding": {
+    "progress": "Step {current} of {total}",
+    "welcome": {
+      "title": "Welcome to DailyOwo",
+      "subtitle": "Your journey to financial freedom starts here. Let's set up your personalized experience.",
+      "features": {
+        "ai": {
+          "title": "AI-Powered",
+          "description": "Smart insights that help you grow"
+        },
+        "secure": {
+          "title": "Secure",
+          "description": "Your data is always protected"
+        },
+        "family": {
+          "title": "Family-Friendly",
+          "description": "Manage finances together"
+        }
+      },
+      "getStarted": "Get Started",
+      "setupTime": "This setup takes about 3 minutes"
+    },
+    "region": {
+      "title": "Where are you located?",
+      "subtitle": "We'll customize your experience based on your region",
+      "selectRegion": "Select your region",
+      "preferredLanguage": "Preferred language",
+      "moreLanguagesComing": "More languages coming soon"
+    },
+    "preferences": {
+      "title": "Customize your experience",
+      "subtitle": "Choose how DailyOwo works for you",
+      "offlineMode": {
+        "title": "Offline Mode",
+        "description": "Use core features without internet connection"
+      },
+      "cloudSync": {
+        "title": "Cloud Sync",
+        "description": "Back up your data and access from any device"
+      },
+      "aiAdvisor": {
+        "title": "Smart AI Advisor",
+        "description": "Get personalized insights and recommendations"
+      },
+      "recommended": "Recommended",
+      "privacyNote": {
+        "title": "Privacy First",
+        "description": "You can change these settings anytime. Your data is encrypted and never shared without your permission."
+      }
+    },
+    "profile": {
+      "title": "Let's get to know you",
+      "subtitle": "This helps us personalize your experience",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "age": "Age",
+      "ageHelper": "We use this to provide age-appropriate financial advice",
+      "privacyNote": {
+        "title": "Your privacy matters",
+        "description": "Your personal information is encrypted and never shared with third parties."
+      },
+      "errors": {
+        "firstNameRequired": "First name is required",
+        "lastNameRequired": "Last name is required",
+        "invalidAge": "Please enter a valid age (13-120)"
+      }
+    },
+    "financialSnapshot": {
+      "title": "Let's understand your finances",
+      "subtitle": "This helps us create your personalized plan",
+      "monthlyIncome": "Monthly Income",
+      "monthlyIncomeHelper": "Your total income after taxes",
+      "monthlyExpenses": "Monthly Expenses",
+      "monthlyExpensesHelper": "Average monthly spending",
+      "currentSavings": "Current Savings",
+      "currentSavingsHelper": "Total across all accounts",
+      "currentDebt": "Current Debt",
+      "currentDebtHelper": "Credit cards, loans, etc.",
+      "preview": "Quick Preview",
+      "monthlySavings": "Monthly Savings",
+      "netWorth": "Net Worth",
+      "dontWorry": "Don't worry about being exact. You can update these anytime."
+    },
+    "family": {
+      "title": "Want to manage finances together?",
+      "subtitle": "Invite family members to collaborate on your financial journey",
+      "trackAsTeam": "Track finances as a team",
+      "description": "Share financial goals, track combined net worth, and build wealth together with privacy controls.",
+      "manageSolo": "I'll manage solo",
+      "addFamilyMember": "Add family member",
+      "addAnother": "Add another member",
+      "name": "Name",
+      "email": "Email",
+      "relationship": "Relationship",
+      "permissions": "Permissions",
+      "roles": {
+        "partner": "Partner",
+        "child": "Child",
+        "parent": "Parent",
+        "other": "Other"
+      },
+      "permissionTypes": {
+        "viewBalance": "View total balances",
+        "viewTransactions": "View transactions",
+        "viewGoals": "View financial goals",
+        "addTransactions": "Add transactions"
+      },
+      "errors": {
+        "nameRequired": "Name is required",
+        "emailRequired": "Email is required",
+        "invalidEmail": "Invalid email format"
+      }
+    },
+    "investments": {
+      "title": "Do you have investments to track?",
+      "subtitle": "We'll help you monitor your portfolio performance",
+      "buildComplete": "Build your complete financial picture",
+      "description": "Track all your investments in one place and see your true net worth grow over time.",
+      "noInvestments": "No investments yet",
+      "haveInvestments": "Yes, I have investments",
+      "selectAll": "Select all that apply (you can add details later)",
+      "dontWorry": "Don't worry about exact values now. You can add specific investments and their current values after setup.",
+      "types": {
+        "stocks": {
+          "name": "Stocks & Shares",
+          "description": "Individual stocks, ETFs, mutual funds"
+        },
+        "bonds": {
+          "name": "Bonds & Fixed Income",
+          "description": "Government bonds, corporate bonds"
+        },
+        "crypto": {
+          "name": "Cryptocurrency",
+          "description": "Bitcoin, Ethereum, other digital assets"
+        },
+        "realEstate": {
+          "name": "Real Estate",
+          "description": "Properties, REITs, land"
+        },
+        "retirement": {
+          "name": "Retirement Accounts",
+          "description": "401(k), IRA, pension plans"
+        },
+        "other": {
+          "name": "Other Investments",
+          "description": "Art, collectibles, business ownership"
+        }
+      }
+    },
+    "completion": {
+      "title": "Perfect, {firstName}!",
+      "subtitle": "Your personalized financial dashboard is ready. Let's start building your path to financial freedom.",
+      "setupSummary": "Your Setup Summary",
+      "region": "Region",
+      "aiAdvisor": "AI Advisor",
+      "familyMembers": "Family Members",
+      "investmentTypes": "Investment Types",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "aiReady": {
+        "title": "Your AI Advisor is ready",
+        "description": "I'll analyze your financial patterns and provide personalized insights to help you reach your goals faster."
+      },
+      "goToDashboard": "Go to Dashboard",
+      "canChangeSettings": "You can always update your settings later",
+      "creatingDashboard": "Creating your dashboard...",
+      "settingUp": "Setting up your personalized financial hub"
+    }
+  },
+  "dashboard": {
+    "greeting": {
+      "morning": "Good morning, {name} 👋",
+      "afternoon": "Good afternoon, {name} 👋",
+      "evening": "Good evening, {name} 👋",
+      "tagline": "Let's make today financially strong"
+    },
+    "netWorth": {
+      "title": "Total Net Worth",
+      "change": "{percentage}% this month"
+    },
+    "overview": {
+      "income": "Income",
+      "expenses": "Expenses",
+      "savings": "Savings",
+      "saveRate": "Save Rate"
+    },
+    "goals": {
+      "title": "Your Goals",
+      "addGoal": "Add Goal",
+      "of": "of",
+      "progress": "{percentage}%"
+    },
+    "insights": {
+      "title": "AI Insights"
+    },
+    "transactions": {
+      "title": "Recent Activity",
+      "viewAll": "View All",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "daysAgo": "{days} days ago"
+    },
+    "investments": {
+      "title": "Investments"
+    },
+    "quickActions": {
+      "addTransaction": "Add Transaction",
+      "addAsset": "Add Asset",
+      "setGoal": "Set Goal",
+      "viewInsights": "View Insights"
+    }
+  },
+  "transactions": {
+    "income": "Income",
+    "expense": "Expense",
+    "categories": {
+      "income": {
+        "salary": "Salary",
+        "freelance": "Freelance",
+        "business": "Business",
+        "investments": "Investments",
+        "rental": "Rental Income",
+        "gifts": "Gifts",
+        "refunds": "Refunds",
+        "other": "Other Income"
+      },
+      "expense": {
+        "housing": "Housing",
+        "transportation": "Transportation",
+        "food": "Food & Dining",
+        "utilities": "Utilities",
+        "healthcare": "Healthcare",
+        "insurance": "Insurance",
+        "shopping": "Shopping",
+        "entertainment": "Entertainment",
+        "education": "Education",
+        "travel": "Travel",
+        "personal": "Personal Care",
+        "savings": "Savings",
+        "debt": "Debt Payment",
+        "other": "Other"
+      }
+    }
+  },
+  "pwa": {
+    "install": {
+      "title": "Install DailyOwo",
+      "androidDescription": "Install our app for quick access and offline support.",
+      "iosDescription": "Tap the share button and \"Add to Home Screen\" for the best experience.",
+      "installNow": "Install Now",
+      "maybeLater": "Maybe Later",
+      "iosInstructions": {
+        "step1": "Tap",
+        "step2": "Scroll and tap \"Add to Home Screen\""
+      }
+    }
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Network error. Please check your connection.",
+    "notFound": "Page not found",
+    "unauthorized": "You don't have permission to access this",
+    "validation": "Please check your input and try again"
+  },
+  "landing": {
+    "tagline": "Ẹlẹgbẹ Owó Rẹ Tó Dára Jù",
+    "getStarted": "Bẹ̀rẹ̀",
+    "signIn": "Wọlé",
+    "features": {
+      "track": {
+        "title": "Tọpinpin Gbogbo Nkan",
+        "description": "Ṣe àbójútó owó tó ń wọlé, èyí tó ń jáde àti ìdókòwò nínú ètò tó lẹ́wà"
+      },
+      "ai": {
+        "title": "Ìmọ̀ràn AI",
+        "description": "Gba ìmọ̀ràn tó bá ọ mu láti ọ̀dọ̀ AI tó ga"
+      },
+      "family": {
+        "title": "Ó Dára Fún Ẹbí",
+        "description": "Ṣàkóso owó papọ̀ pẹ̀lú ìṣàkóso ìpamọ́"
+      }
+    },
+    "demo": {
+      "question": "Ṣé o fẹ́ rí bí ó ṣe ń ṣiṣẹ́?",
+      "button": "Wo Ìfihàn Tó Ń Ṣiṣẹ́"
+    }
+  }
+}

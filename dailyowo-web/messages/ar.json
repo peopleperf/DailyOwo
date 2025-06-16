@@ -1,0 +1,396 @@
+{
+  "common": {
+    "appName": "DailyOwo",
+    "loading": "جاري التحميل...",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "add": "إضافة",
+    "back": "رجوع",
+    "next": "التالي",
+    "continue": "متابعة",
+    "skip": "Skip",
+    "skipForNow": "Skip for now",
+    "done": "Done",
+    "close": "Close",
+    "yes": "نعم",
+    "no": "لا",
+    "or": "or",
+    "and": "and",
+    "currency": "Currency",
+    "amount": "Amount",
+    "date": "Date",
+    "time": "Time",
+    "search": "Search",
+    "filter": "Filter",
+    "settings": "Settings",
+    "profile": "Profile",
+    "logout": "Logout",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "splash": {
+    "tagline": "Your journey to financial freedom"
+  },
+  "auth": {
+    "login": {
+      "title": "مرحباً بعودتك",
+      "subtitle": "سجل الدخول لمتابعة إدارة أموالك",
+      "email": "البريد الإلكتروني",
+      "password": "كلمة المرور",
+      "forgotPassword": "نسيت كلمة المرور؟",
+      "signIn": "تسجيل الدخول",
+      "noAccount": "ليس لديك حساب؟",
+      "signUp": "سجل الآن",
+      "orContinueWith": "أو تابع مع",
+      "signInWithGoogle": "المتابعة مع جوجل",
+      "errors": {
+        "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+        "userNotFound": "لم يتم العثور على حساب بهذا البريد الإلكتروني",
+        "tooManyAttempts": "محاولات كثيرة. يرجى المحاولة لاحقاً",
+        "networkError": "خطأ في الشبكة. يرجى التحقق من اتصالك"
+      }
+    },
+    "register": {
+      "title": "أنشئ حسابك",
+      "subtitle": "انضم إلى DailyOwo وتحكم في أموالك",
+      "fullName": "الاسم الكامل",
+      "email": "عنوان البريد الإلكتروني",
+      "password": "كلمة المرور",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "agreeToTerms": "أوافق على شروط الخدمة وسياسة الخصوصية",
+      "createAccount": "إنشاء حساب",
+      "alreadyHaveAccount": "لديك حساب بالفعل؟",
+      "signIn": "تسجيل الدخول",
+      "orSignUpWith": "أو سجل مع",
+      "signUpWithGoogle": "المتابعة مع جوجل",
+      "passwordRequirements": {
+        "title": "يجب أن تحتوي كلمة المرور على:",
+        "minLength": "8 أحرف على الأقل",
+        "uppercase": "حرف كبير واحد",
+        "lowercase": "حرف صغير واحد",
+        "number": "رقم واحد",
+        "special": "رمز خاص واحد"
+      },
+      "passwordStrength": {
+        "weak": "ضعيفة",
+        "fair": "متوسطة",
+        "good": "جيدة",
+        "strong": "قوية"
+      },
+      "errors": {
+        "emailInUse": "هذا البريد الإلكتروني مسجل بالفعل",
+        "weakPassword": "كلمة المرور ضعيفة جداً",
+        "passwordMismatch": "كلمات المرور غير متطابقة",
+        "invalidEmail": "يرجى إدخال بريد إلكتروني صحيح",
+        "termsRequired": "يجب الموافقة على الشروط"
+      },
+      "success": "تم إنشاء الحساب بنجاح! جاري إعداد ملفك الشخصي..."
+    },
+    "resetPassword": {
+      "title": "إعادة تعيين كلمة المرور",
+      "subtitle": "أدخل بريدك الإلكتروني لتلقي التعليمات",
+      "email": "عنوان البريد الإلكتروني",
+      "sendInstructions": "إرسال التعليمات",
+      "backToLogin": "العودة لتسجيل الدخول",
+      "checkEmail": "تحقق من بريدك الإلكتروني",
+      "emailSent": "لقد أرسلنا التعليمات إلى {email}",
+      "didntReceive": "لم تستلم البريد الإلكتروني؟",
+      "resend": "إعادة الإرسال",
+      "errors": {
+        "userNotFound": "لم يتم العثور على حساب بهذا البريد الإلكتروني",
+        "tooManyRequests": "طلبات كثيرة جداً. يرجى المحاولة لاحقاً"
+      }
+    }
+  },
+  "onboarding": {
+    "progress": "Step {current} of {total}",
+    "welcome": {
+      "title": "Welcome to DailyOwo",
+      "subtitle": "Your journey to financial freedom starts here. Let's set up your personalized experience.",
+      "features": {
+        "ai": {
+          "title": "AI-Powered",
+          "description": "Smart insights that help you grow"
+        },
+        "secure": {
+          "title": "Secure",
+          "description": "Your data is always protected"
+        },
+        "family": {
+          "title": "Family-Friendly",
+          "description": "Manage finances together"
+        }
+      },
+      "getStarted": "Get Started",
+      "setupTime": "This setup takes about 3 minutes"
+    },
+    "region": {
+      "title": "Where are you located?",
+      "subtitle": "We'll customize your experience based on your region",
+      "selectRegion": "Select your region",
+      "preferredLanguage": "Preferred language",
+      "moreLanguagesComing": "More languages coming soon"
+    },
+    "preferences": {
+      "title": "Customize your experience",
+      "subtitle": "Choose how DailyOwo works for you",
+      "offlineMode": {
+        "title": "Offline Mode",
+        "description": "Use core features without internet connection"
+      },
+      "cloudSync": {
+        "title": "Cloud Sync",
+        "description": "Back up your data and access from any device"
+      },
+      "aiAdvisor": {
+        "title": "Smart AI Advisor",
+        "description": "Get personalized insights and recommendations"
+      },
+      "recommended": "Recommended",
+      "privacyNote": {
+        "title": "Privacy First",
+        "description": "You can change these settings anytime. Your data is encrypted and never shared without your permission."
+      }
+    },
+    "profile": {
+      "title": "Let's get to know you",
+      "subtitle": "This helps us personalize your experience",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "age": "Age",
+      "ageHelper": "We use this to provide age-appropriate financial advice",
+      "privacyNote": {
+        "title": "Your privacy matters",
+        "description": "Your personal information is encrypted and never shared with third parties."
+      },
+      "errors": {
+        "firstNameRequired": "First name is required",
+        "lastNameRequired": "Last name is required",
+        "invalidAge": "Please enter a valid age (13-120)"
+      }
+    },
+    "financialSnapshot": {
+      "title": "Let's understand your finances",
+      "subtitle": "This helps us create your personalized plan",
+      "monthlyIncome": "Monthly Income",
+      "monthlyIncomeHelper": "Your total income after taxes",
+      "monthlyExpenses": "Monthly Expenses",
+      "monthlyExpensesHelper": "Average monthly spending",
+      "currentSavings": "Current Savings",
+      "currentSavingsHelper": "Total across all accounts",
+      "currentDebt": "Current Debt",
+      "currentDebtHelper": "Credit cards, loans, etc.",
+      "preview": "Quick Preview",
+      "monthlySavings": "Monthly Savings",
+      "netWorth": "Net Worth",
+      "dontWorry": "Don't worry about being exact. You can update these anytime."
+    },
+    "family": {
+      "title": "Want to manage finances together?",
+      "subtitle": "Invite family members to collaborate on your financial journey",
+      "trackAsTeam": "Track finances as a team",
+      "description": "Share financial goals, track combined net worth, and build wealth together with privacy controls.",
+      "manageSolo": "I'll manage solo",
+      "addFamilyMember": "Add family member",
+      "addAnother": "Add another member",
+      "name": "Name",
+      "email": "Email",
+      "relationship": "Relationship",
+      "permissions": "Permissions",
+      "roles": {
+        "partner": "Partner",
+        "child": "Child",
+        "parent": "Parent",
+        "other": "Other"
+      },
+      "permissionTypes": {
+        "viewBalance": "View total balances",
+        "viewTransactions": "View transactions",
+        "viewGoals": "View financial goals",
+        "addTransactions": "Add transactions"
+      },
+      "errors": {
+        "nameRequired": "Name is required",
+        "emailRequired": "Email is required",
+        "invalidEmail": "Invalid email format"
+      }
+    },
+    "investments": {
+      "title": "Do you have investments to track?",
+      "subtitle": "We'll help you monitor your portfolio performance",
+      "buildComplete": "Build your complete financial picture",
+      "description": "Track all your investments in one place and see your true net worth grow over time.",
+      "noInvestments": "No investments yet",
+      "haveInvestments": "Yes, I have investments",
+      "selectAll": "Select all that apply (you can add details later)",
+      "dontWorry": "Don't worry about exact values now. You can add specific investments and their current values after setup.",
+      "types": {
+        "stocks": {
+          "name": "Stocks & Shares",
+          "description": "Individual stocks, ETFs, mutual funds"
+        },
+        "bonds": {
+          "name": "Bonds & Fixed Income",
+          "description": "Government bonds, corporate bonds"
+        },
+        "crypto": {
+          "name": "Cryptocurrency",
+          "description": "Bitcoin, Ethereum, other digital assets"
+        },
+        "realEstate": {
+          "name": "Real Estate",
+          "description": "Properties, REITs, land"
+        },
+        "retirement": {
+          "name": "Retirement Accounts",
+          "description": "401(k), IRA, pension plans"
+        },
+        "other": {
+          "name": "Other Investments",
+          "description": "Art, collectibles, business ownership"
+        }
+      }
+    },
+    "completion": {
+      "title": "Perfect, {firstName}!",
+      "subtitle": "Your personalized financial dashboard is ready. Let's start building your path to financial freedom.",
+      "setupSummary": "Your Setup Summary",
+      "region": "Region",
+      "aiAdvisor": "AI Advisor",
+      "familyMembers": "Family Members",
+      "investmentTypes": "Investment Types",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "aiReady": {
+        "title": "Your AI Advisor is ready",
+        "description": "I'll analyze your financial patterns and provide personalized insights to help you reach your goals faster."
+      },
+      "goToDashboard": "Go to Dashboard",
+      "canChangeSettings": "You can always update your settings later",
+      "creatingDashboard": "Creating your dashboard...",
+      "settingUp": "Setting up your personalized financial hub"
+    }
+  },
+  "dashboard": {
+    "greeting": {
+      "morning": "Good morning, {name} 👋",
+      "afternoon": "Good afternoon, {name} 👋",
+      "evening": "Good evening, {name} 👋",
+      "tagline": "Let's make today financially strong"
+    },
+    "netWorth": {
+      "title": "Total Net Worth",
+      "change": "{percentage}% this month"
+    },
+    "overview": {
+      "income": "Income",
+      "expenses": "Expenses",
+      "savings": "Savings",
+      "saveRate": "Save Rate"
+    },
+    "goals": {
+      "title": "Your Goals",
+      "addGoal": "Add Goal",
+      "of": "of",
+      "progress": "{percentage}%"
+    },
+    "insights": {
+      "title": "AI Insights"
+    },
+    "transactions": {
+      "title": "Recent Activity",
+      "viewAll": "View All",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "daysAgo": "{days} days ago"
+    },
+    "investments": {
+      "title": "Investments"
+    },
+    "quickActions": {
+      "addTransaction": "Add Transaction",
+      "addAsset": "Add Asset",
+      "setGoal": "Set Goal",
+      "viewInsights": "View Insights"
+    }
+  },
+  "transactions": {
+    "income": "Income",
+    "expense": "Expense",
+    "categories": {
+      "income": {
+        "salary": "Salary",
+        "freelance": "Freelance",
+        "business": "Business",
+        "investments": "Investments",
+        "rental": "Rental Income",
+        "gifts": "Gifts",
+        "refunds": "Refunds",
+        "other": "Other Income"
+      },
+      "expense": {
+        "housing": "Housing",
+        "transportation": "Transportation",
+        "food": "Food & Dining",
+        "utilities": "Utilities",
+        "healthcare": "Healthcare",
+        "insurance": "Insurance",
+        "shopping": "Shopping",
+        "entertainment": "Entertainment",
+        "education": "Education",
+        "travel": "Travel",
+        "personal": "Personal Care",
+        "savings": "Savings",
+        "debt": "Debt Payment",
+        "other": "Other"
+      }
+    }
+  },
+  "pwa": {
+    "install": {
+      "title": "Install DailyOwo",
+      "androidDescription": "Install our app for quick access and offline support.",
+      "iosDescription": "Tap the share button and \"Add to Home Screen\" for the best experience.",
+      "installNow": "Install Now",
+      "maybeLater": "Maybe Later",
+      "iosInstructions": {
+        "step1": "Tap",
+        "step2": "Scroll and tap \"Add to Home Screen\""
+      }
+    }
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Network error. Please check your connection.",
+    "notFound": "Page not found",
+    "unauthorized": "You don't have permission to access this",
+    "validation": "Please check your input and try again"
+  },
+  "landing": {
+    "tagline": "رفيقك المالي المميز",
+    "getStarted": "ابدأ",
+    "signIn": "تسجيل الدخول",
+    "features": {
+      "track": {
+        "title": "تتبع كل شيء",
+        "description": "راقب الدخل والمصروفات والاستثمارات في واجهة جميلة واحدة"
+      },
+      "ai": {
+        "title": "رؤى الذكاء الاصطناعي",
+        "description": "احصل على توصيات مخصصة مدعومة بالذكاء الاصطناعي المتقدم"
+      },
+      "family": {
+        "title": "صديق للعائلة",
+        "description": "إدارة الأموال معًا مع ضوابط الخصوصية"
+      }
+    },
+    "demo": {
+      "question": "هل تريد أن ترى كيف يعمل؟",
+      "button": "عرض العرض التوضيحي التفاعلي"
+    }
+  }
+}

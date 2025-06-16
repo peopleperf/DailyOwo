@@ -1,0 +1,396 @@
+{
+  "common": {
+    "appName": "DailyOwo",
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Añadir",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "continue": "Continuar",
+    "skip": "Omitir",
+    "skipForNow": "Omitir por ahora",
+    "done": "Hecho",
+    "close": "Cerrar",
+    "yes": "Sí",
+    "no": "No",
+    "or": "o",
+    "and": "y",
+    "currency": "Moneda",
+    "amount": "Cantidad",
+    "date": "Fecha",
+    "time": "Hora",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "settings": "Configuración",
+    "profile": "Perfil",
+    "logout": "Cerrar sesión",
+    "error": "Error",
+    "success": "Éxito",
+    "warning": "Advertencia",
+    "info": "Información"
+  },
+  "splash": {
+    "tagline": "Tu camino hacia la libertad financiera"
+  },
+  "auth": {
+    "login": {
+      "title": "Bienvenido de nuevo",
+      "subtitle": "Inicia sesión para continuar gestionando tus finanzas",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "signIn": "Iniciar sesión",
+      "noAccount": "¿No tienes una cuenta?",
+      "signUp": "Regístrate",
+      "orContinueWith": "O continúa con",
+      "signInWithGoogle": "Continuar con Google",
+      "errors": {
+        "invalidCredentials": "Correo electrónico o contraseña inválidos",
+        "userNotFound": "No se encontró ninguna cuenta con este correo",
+        "tooManyAttempts": "Demasiados intentos. Por favor, intenta más tarde",
+        "networkError": "Error de red. Por favor, verifica tu conexión"
+      }
+    },
+    "register": {
+      "title": "Crea tu cuenta",
+      "subtitle": "Únete a DailyOwo y toma el control de tus finanzas",
+      "fullName": "Nombre completo",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "confirmPassword": "Confirmar contraseña",
+      "agreeToTerms": "Acepto los Términos de Servicio y la Política de Privacidad",
+      "createAccount": "Crear cuenta",
+      "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+      "signIn": "Iniciar sesión",
+      "orSignUpWith": "O regístrate con",
+      "signUpWithGoogle": "Continuar con Google",
+      "passwordRequirements": {
+        "title": "La contraseña debe contener:",
+        "minLength": "Al menos 8 caracteres",
+        "uppercase": "Una letra mayúscula",
+        "lowercase": "Una letra minúscula",
+        "number": "Un número",
+        "special": "Un carácter especial"
+      },
+      "passwordStrength": {
+        "weak": "Débil",
+        "fair": "Regular",
+        "good": "Buena",
+        "strong": "Fuerte"
+      },
+      "errors": {
+        "emailInUse": "Este correo ya está registrado",
+        "weakPassword": "La contraseña es muy débil",
+        "passwordMismatch": "Las contraseñas no coinciden",
+        "invalidEmail": "Por favor, ingresa un correo válido",
+        "termsRequired": "Debes aceptar los términos"
+      },
+      "success": "¡Cuenta creada exitosamente! Configurando tu perfil..."
+    },
+    "resetPassword": {
+      "title": "Restablecer contraseña",
+      "subtitle": "Ingresa tu correo para recibir instrucciones",
+      "email": "Correo electrónico",
+      "sendInstructions": "Enviar instrucciones",
+      "backToLogin": "Volver al inicio de sesión",
+      "checkEmail": "Revisa tu correo",
+      "emailSent": "Hemos enviado instrucciones a {email}",
+      "didntReceive": "¿No recibiste el correo?",
+      "resend": "Reenviar",
+      "errors": {
+        "userNotFound": "No se encontró ninguna cuenta con este correo",
+        "tooManyRequests": "Demasiadas solicitudes. Por favor, intenta más tarde"
+      }
+    }
+  },
+  "onboarding": {
+    "progress": "Paso {current} de {total}",
+    "welcome": {
+      "title": "Bienvenido a DailyOwo",
+      "subtitle": "Tu camino hacia la libertad financiera comienza aquí. Configuremos tu experiencia personalizada.",
+      "features": {
+        "ai": {
+          "title": "Impulsado por IA",
+          "description": "Información inteligente que te ayuda a crecer"
+        },
+        "secure": {
+          "title": "Seguro",
+          "description": "Tus datos siempre están protegidos"
+        },
+        "family": {
+          "title": "Familiar",
+          "description": "Gestiona las finanzas juntos"
+        }
+      },
+      "getStarted": "Comenzar",
+      "setupTime": "Esta configuración toma unos 3 minutos"
+    },
+    "region": {
+      "title": "¿Dónde te encuentras?",
+      "subtitle": "Personalizaremos tu experiencia según tu región",
+      "selectRegion": "Selecciona tu región",
+      "preferredLanguage": "Idioma preferido",
+      "moreLanguagesComing": "Más idiomas próximamente"
+    },
+    "preferences": {
+      "title": "Personaliza tu experiencia",
+      "subtitle": "Elige cómo funciona DailyOwo para ti",
+      "offlineMode": {
+        "title": "Modo sin conexión",
+        "description": "Usa las funciones principales sin conexión a internet"
+      },
+      "cloudSync": {
+        "title": "Sincronización en la nube",
+        "description": "Respalda tus datos y accede desde cualquier dispositivo"
+      },
+      "aiAdvisor": {
+        "title": "Asesor IA inteligente",
+        "description": "Obtén información y recomendaciones personalizadas"
+      },
+      "recommended": "Recomendado",
+      "privacyNote": {
+        "title": "Privacidad primero",
+        "description": "Puedes cambiar esta configuración en cualquier momento. Tus datos están cifrados y nunca se comparten sin tu permiso."
+      }
+    },
+    "profile": {
+      "title": "Vamos a conocerte",
+      "subtitle": "Esto nos ayuda a personalizar tu experiencia",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "age": "Edad",
+      "ageHelper": "Usamos esto para proporcionar consejos financieros apropiados para tu edad",
+      "privacyNote": {
+        "title": "Tu privacidad importa",
+        "description": "Tu información personal está cifrada y nunca se comparte con terceros."
+      },
+      "errors": {
+        "firstNameRequired": "El nombre es obligatorio",
+        "lastNameRequired": "El apellido es obligatorio",
+        "invalidAge": "Por favor, ingresa una edad válida (13-120)"
+      }
+    },
+    "financialSnapshot": {
+      "title": "Entendamos tus finanzas",
+      "subtitle": "Esto nos ayuda a crear tu plan personalizado",
+      "monthlyIncome": "Ingresos mensuales",
+      "monthlyIncomeHelper": "Tu ingreso total después de impuestos",
+      "monthlyExpenses": "Gastos mensuales",
+      "monthlyExpensesHelper": "Gasto mensual promedio",
+      "currentSavings": "Ahorros actuales",
+      "currentSavingsHelper": "Total en todas las cuentas",
+      "currentDebt": "Deuda actual",
+      "currentDebtHelper": "Tarjetas de crédito, préstamos, etc.",
+      "preview": "Vista previa",
+      "monthlySavings": "Ahorros mensuales",
+      "netWorth": "Patrimonio neto",
+      "dontWorry": "No te preocupes por ser exacto. Puedes actualizar esto en cualquier momento."
+    },
+    "family": {
+      "title": "¿Quieres gestionar las finanzas juntos?",
+      "subtitle": "Invita a familiares para colaborar en tu viaje financiero",
+      "trackAsTeam": "Gestiona las finanzas en equipo",
+      "description": "Comparte objetivos financieros, rastrea el patrimonio neto combinado y construye riqueza juntos con controles de privacidad.",
+      "manageSolo": "Gestionaré solo",
+      "addFamilyMember": "Añadir miembro familiar",
+      "addAnother": "Añadir otro miembro",
+      "name": "Nombre",
+      "email": "Correo electrónico",
+      "relationship": "Relación",
+      "permissions": "Permisos",
+      "roles": {
+        "partner": "Pareja",
+        "child": "Hijo/a",
+        "parent": "Padre/Madre",
+        "other": "Otro"
+      },
+      "permissionTypes": {
+        "viewBalance": "Ver saldos totales",
+        "viewTransactions": "Ver transacciones",
+        "viewGoals": "Ver objetivos financieros",
+        "addTransactions": "Añadir transacciones"
+      },
+      "errors": {
+        "nameRequired": "El nombre es obligatorio",
+        "emailRequired": "El correo es obligatorio",
+        "invalidEmail": "Formato de correo inválido"
+      }
+    },
+    "investments": {
+      "title": "¿Tienes inversiones para rastrear?",
+      "subtitle": "Te ayudaremos a monitorear el rendimiento de tu cartera",
+      "buildComplete": "Construye tu imagen financiera completa",
+      "description": "Rastrea todas tus inversiones en un solo lugar y observa cómo crece tu patrimonio neto real.",
+      "noInvestments": "Aún no tengo inversiones",
+      "haveInvestments": "Sí, tengo inversiones",
+      "selectAll": "Selecciona todas las que apliquen (puedes añadir detalles después)",
+      "dontWorry": "No te preocupes por los valores exactos ahora. Puedes añadir inversiones específicas y sus valores actuales después de la configuración.",
+      "types": {
+        "stocks": {
+          "name": "Acciones y Valores",
+          "description": "Acciones individuales, ETFs, fondos mutuos"
+        },
+        "bonds": {
+          "name": "Bonos e Ingresos Fijos",
+          "description": "Bonos gubernamentales, bonos corporativos"
+        },
+        "crypto": {
+          "name": "Criptomonedas",
+          "description": "Bitcoin, Ethereum, otros activos digitales"
+        },
+        "realEstate": {
+          "name": "Bienes Raíces",
+          "description": "Propiedades, REITs, terrenos"
+        },
+        "retirement": {
+          "name": "Cuentas de Jubilación",
+          "description": "Planes de pensiones, fondos de retiro"
+        },
+        "other": {
+          "name": "Otras Inversiones",
+          "description": "Arte, coleccionables, propiedad de negocios"
+        }
+      }
+    },
+    "completion": {
+      "title": "¡Perfecto, {firstName}!",
+      "subtitle": "Tu panel financiero personalizado está listo. Comencemos a construir tu camino hacia la libertad financiera.",
+      "setupSummary": "Resumen de configuración",
+      "region": "Región",
+      "aiAdvisor": "Asesor IA",
+      "familyMembers": "Miembros familiares",
+      "investmentTypes": "Tipos de inversión",
+      "enabled": "Activado",
+      "disabled": "Desactivado",
+      "aiReady": {
+        "title": "Tu asesor IA está listo",
+        "description": "Analizaré tus patrones financieros y proporcionaré información personalizada para ayudarte a alcanzar tus objetivos más rápido."
+      },
+      "goToDashboard": "Ir al panel",
+      "canChangeSettings": "Siempre puedes actualizar tu configuración más tarde",
+      "creatingDashboard": "Creando tu panel...",
+      "settingUp": "Configurando tu centro financiero personalizado"
+    }
+  },
+  "dashboard": {
+    "greeting": {
+      "morning": "Buenos días, {name} 👋",
+      "afternoon": "Buenas tardes, {name} 👋",
+      "evening": "Buenas noches, {name} 👋",
+      "tagline": "Hagamos de hoy un día financieramente fuerte"
+    },
+    "netWorth": {
+      "title": "Patrimonio neto total",
+      "change": "{percentage}% este mes"
+    },
+    "overview": {
+      "income": "Ingresos",
+      "expenses": "Gastos",
+      "savings": "Ahorros",
+      "saveRate": "Tasa de ahorro"
+    },
+    "goals": {
+      "title": "Tus objetivos",
+      "addGoal": "Añadir objetivo",
+      "of": "de",
+      "progress": "{percentage}%"
+    },
+    "insights": {
+      "title": "Información IA"
+    },
+    "transactions": {
+      "title": "Actividad reciente",
+      "viewAll": "Ver todo",
+      "today": "Hoy",
+      "yesterday": "Ayer",
+      "daysAgo": "Hace {days} días"
+    },
+    "investments": {
+      "title": "Inversiones"
+    },
+    "quickActions": {
+      "addTransaction": "Añadir transacción",
+      "addAsset": "Añadir activo",
+      "setGoal": "Establecer objetivo",
+      "viewInsights": "Ver información"
+    }
+  },
+  "transactions": {
+    "income": "Ingreso",
+    "expense": "Gasto",
+    "categories": {
+      "income": {
+        "salary": "Salario",
+        "freelance": "Trabajo independiente",
+        "business": "Negocio",
+        "investments": "Inversiones",
+        "rental": "Ingresos por alquiler",
+        "gifts": "Regalos",
+        "refunds": "Reembolsos",
+        "other": "Otros ingresos"
+      },
+      "expense": {
+        "housing": "Vivienda",
+        "transportation": "Transporte",
+        "food": "Comida y restaurantes",
+        "utilities": "Servicios públicos",
+        "healthcare": "Salud",
+        "insurance": "Seguros",
+        "shopping": "Compras",
+        "entertainment": "Entretenimiento",
+        "education": "Educación",
+        "travel": "Viajes",
+        "personal": "Cuidado personal",
+        "savings": "Ahorros",
+        "debt": "Pago de deudas",
+        "other": "Otros"
+      }
+    }
+  },
+  "pwa": {
+    "install": {
+      "title": "Instalar DailyOwo",
+      "androidDescription": "Instala nuestra app para acceso rápido y soporte sin conexión.",
+      "iosDescription": "Toca el botón compartir y \"Añadir a pantalla de inicio\" para la mejor experiencia.",
+      "installNow": "Instalar ahora",
+      "maybeLater": "Quizás más tarde",
+      "iosInstructions": {
+        "step1": "Toca",
+        "step2": "Desplázate y toca \"Añadir a pantalla de inicio\""
+      }
+    }
+  },
+  "errors": {
+    "generic": "Algo salió mal. Por favor, intenta de nuevo.",
+    "network": "Error de red. Por favor, verifica tu conexión.",
+    "notFound": "Página no encontrada",
+    "unauthorized": "No tienes permiso para acceder a esto",
+    "validation": "Por favor, verifica tu entrada e intenta de nuevo"
+  },
+  "landing": {
+    "tagline": "Tu Compañero Financiero Premium",
+    "getStarted": "Empezar",
+    "signIn": "Iniciar Sesión",
+    "features": {
+      "track": {
+        "title": "Rastrea Todo",
+        "description": "Monitorea ingresos, gastos e inversiones en una hermosa interfaz"
+      },
+      "ai": {
+        "title": "Perspectivas de IA",
+        "description": "Obtén recomendaciones personalizadas impulsadas por IA avanzada"
+      },
+      "family": {
+        "title": "Familiar",
+        "description": "Administra las finanzas juntos con controles de privacidad"
+      }
+    },
+    "demo": {
+      "question": "¿Quieres ver cómo funciona?",
+      "button": "Ver Demo Interactiva"
+    }
+  }
+} 

@@ -1,0 +1,236 @@
+// Firebase Firestore Security Rules
+// Copy these to your Firebase Console > Firestore > Rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow users to read and write their own user document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow users to manage their own sessions
+      match /sessions/{sessionId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Allow users to read their own login activities
+      match /loginActivities/{activityId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Allow users to manage their own 2FA settings (legacy path)
+      match /twoFactorAuth/{document} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Allow users to manage their security settings (actual path used by 2FA service)
+      match /security/{document} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Allow users to manage their own 2FA backup codes
+      match /backupCodes/{codeId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Allow users to manage their own notifications
+      match /notifications/{notificationId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Allow users to manage their own transactions (subcollection structure)
+      match /transactions/{transactionId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Allow users to manage their own assets (subcollection structure)
+      match /assets/{assetId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Allow users to manage their own liabilities (subcollection structure)
+      match /liabilities/{liabilityId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Allow users to manage their own budgets (subcollection structure)
+      match /budgets/{budgetId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Allow users to manage their own goals (subcollection structure)
+      match /goals/{goalId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Allow users to manage their own audit logs (subcollection structure)
+      match /audit_logs/{logId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Allow users to manage their own custom roles (subcollection structure)
+      match /custom_roles/{roleId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+    
+    // Allow users to manage their own user profile (password tracking, 2FA status)
+    match /userProfiles/{userId} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow users to create audit logs for their own actions (top-level)
+    match /audit_logs/{logId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.userId ||
+        request.auth.uid == resource.data.uid
+      );
+      allow create: if request.auth != null && (
+        request.auth.uid == request.resource.data.userId ||
+        request.auth.uid == request.resource.data.uid
+      );
+    }
+    
+    // Allow users to manage families where they are principal or member
+    match /families/{familyId} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == familyId || // User is principal (familyId = userId for principal)
+        request.auth.uid == resource.data.principalId || // User is principal
+        request.auth.uid in resource.data.memberIds // User is a member
+      );
+      allow create: if request.auth != null && request.auth.uid == familyId; // Only allow creating family with own ID
+    }
+    
+    // Allow users to manage family invitations (read their own, create new ones if family member)
+    match /family_invitations/{invitationId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.inviterUserId || // Inviter can read
+        resource.data.invitedEmail == request.auth.token.email || // Invitee can read
+        request.auth.token.email == resource.data.invitedEmail // Alternative email check
+      );
+      allow create: if request.auth != null; // Any authenticated user can create invitations
+      allow write: if request.auth != null && (
+        request.auth.uid == resource.data.inviterUserId || // Inviter can update
+        resource.data.invitedEmail == request.auth.token.email || // Invitee can update (accept/decline)
+        request.auth.token.email == resource.data.invitedEmail // Alternative email check
+      );
+    }
+    
+    // Allow users to read and write their own transactions (top-level collection)
+    match /transactions/{transactionId} {
+      allow read, write, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Allow users to manage their goals (top-level collection with userId filtering)
+    match /goals/{goalId} {
+      allow read, write, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Allow users to manage their budgets (top-level collection)
+    match /budgets/{budgetId} {
+      allow read, write, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Allow users to manage their debts
+    match /debts/{debtId} {
+      allow read, write, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Allow users to manage their assets (top-level collection)
+    match /assets/{assetId} {
+      allow read, write, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Allow users to manage their recurring transactions
+    match /recurringTransactions/{recurringId} {
+      allow read, write, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Allow users to manage their categories
+    match /categories/{categoryId} {
+      allow read, write, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Allow users to manage their savings plans
+    match /savingsPlans/{planId} {
+      allow read, write, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Allow users to manage their investment accounts
+    match /investmentAccounts/{accountId} {
+      allow read, write, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Allow users to manage their retirement plans
+    match /retirementPlans/{planId} {
+      allow read, write, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Allow users to manage their emergency funds
+    match /emergencyFunds/{fundId} {
+      allow read, write, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Allow test collections for development and debugging (remove in production)
+    match /test-collection/{document} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Allow connection testing (remove in production)
+    match /_test_/{document} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Allow general test collection access for development
+    match /test/{document} {
+      allow read, write: if request.auth != null;
+    }
+  }
+} 

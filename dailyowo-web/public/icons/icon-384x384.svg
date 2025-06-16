@@ -1,0 +1,13 @@
+<svg width="384" height="384" viewBox="0 0 384 384" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- White background -->
+  <rect width="384" height="384" fill="white"/>
+  
+  <!-- Glass container -->
+  <rect x="48" y="48" width="288" height="288" rx="48" fill="rgba(255,255,255,0.7)" stroke="#A67C00" stroke-width="3.84" opacity="0.5"/>
+  
+  <!-- Letter D -->
+  <text x="192" y="222.71999999999997" font-family="Inter, sans-serif" font-size="153.60000000000002" font-weight="bold" text-anchor="middle" fill="#262659">D</text>
+  
+  <!-- Gold dot -->
+  <circle cx="288" cy="288" r="15.36" fill="#A67C00"/>
+</svg>
