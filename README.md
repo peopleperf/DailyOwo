@@ -55,17 +55,41 @@ DailyOwo is a premium AI-powered personal finance management Progressive Web App
 3. **Set up environment variables**
    Create a `.env.local` file in the root directory:
    ```env
-   # Firebase Configuration
+   # Firebase Configuration (Required)
    NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
    NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
    NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id # Optional
    
-   # Gemini AI (for Cloud Functions)
+   # Firebase Admin SDK (Required for server-side operations)
+   FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"..."}
+   
+   # Email Configuration (Required for email features)
+   RESEND_API_KEY=re_your_resend_api_key
+   EMAIL_FROM=DailyOwo <noreply@yourdomain.com>
+   EMAIL_REPLY_TO=support@yourdomain.com
+   
+   # Application Configuration (Required)
+   NEXT_PUBLIC_APP_URL=http://localhost:3000 # Change to your production URL
+   
+   # Gemini AI (Required for AI features)
    GEMINI_API_KEY=your_gemini_api_key
+   
+   # Encryption (Optional but recommended)
+   NEXT_PUBLIC_ENCRYPTION_KEY=your_32_char_encryption_key_here
+   
+   # Development Only (Optional)
+   NEXT_PUBLIC_USE_FIREBASE_EMULATORS=false # Set to true to use Firebase emulators
    ```
+
+   **Important Notes:**
+   - Get your Resend API key from [https://resend.com/api-keys](https://resend.com/api-keys)
+   - Firebase Service Account Key can be generated from Firebase Console → Project Settings → Service Accounts
+   - Ensure your production `NEXT_PUBLIC_APP_URL` uses HTTPS
+   - The encryption key should be 32 characters long for AES-256 encryption
 
 4. **Set up Firebase**
    - Create a new Firebase project
