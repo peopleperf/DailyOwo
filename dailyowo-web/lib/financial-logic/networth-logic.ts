@@ -5,7 +5,7 @@
  */
 
 import { Transaction, TransactionType } from '@/types/transaction';
-import { SavingsGoal } from './savings-rate-logic';
+import { SavingsGoal, calculateSavingsGoals } from './savings-rate-logic';
 
 export interface NetWorthData {
   totalAssets: number;
@@ -122,7 +122,7 @@ export function calculateNetWorth(
   }
 
   // Calculate savings goals (simplified implementation)
-  const savingsGoals = calculateSavingsGoalsForNetWorth(transactions);
+  const savingsGoals = calculateSavingsGoals(transactions, new Date(), monthlyExpenses || 0);
 
   // Calculate emergency fund details
   const emergencyFundDetails = calculateEmergencyFundDetails(
@@ -256,59 +256,6 @@ export function getEmergencyFundStatus(
     isAdequate,
     recommendation
   };
-}
-
-/**
- * Calculate savings goals for net worth tracking
- */
-function calculateSavingsGoalsForNetWorth(transactions: Transaction[]): SavingsGoal[] {
-  const goals: SavingsGoal[] = [];
-
-  // Emergency fund goal
-  const emergencyFundTransactions = transactions.filter(t => 
-    ((t.type === 'expense' && t.categoryId === 'savings') || t.type === 'asset') &&
-    t.description?.toLowerCase().includes('emergency')
-  );
-
-  if (emergencyFundTransactions.length > 0) {
-    const currentAmount = emergencyFundTransactions.reduce((sum, t) => sum + t.amount, 0);
-    goals.push({
-      id: 'emergency-fund',
-      name: 'Emergency Fund',
-      type: 'emergency-fund',
-      targetAmount: 10000, // Simplified: assume €10k target
-      currentAmount,
-      priority: 'high',
-      isCompleted: currentAmount >= 10000,
-      progress: Math.min(100, (currentAmount / 10000) * 100)
-    });
-  }
-
-  // Retirement goal
-  const retirementTransactions = transactions.filter(t => 
-    ((t.type === 'expense' && t.categoryId === 'savings') || t.type === 'asset') &&
-    (t.description?.toLowerCase().includes('retirement') ||
-     t.description?.toLowerCase().includes('401k') ||
-     t.description?.toLowerCase().includes('ira') ||
-     t.categoryId === 'retirement-401k' ||
-     t.categoryId === 'retirement-ira')
-  );
-
-  if (retirementTransactions.length > 0) {
-    const currentAmount = retirementTransactions.reduce((sum, t) => sum + t.amount, 0);
-    goals.push({
-      id: 'retirement',
-      name: 'Retirement Savings',
-      type: 'retirement',
-      targetAmount: 100000, // Simplified: assume €100k target
-      currentAmount,
-      priority: 'high',
-      isCompleted: currentAmount >= 100000,
-      progress: Math.min(100, (currentAmount / 100000) * 100)
-    });
-  }
-
-  return goals;
 }
 
 /**

@@ -113,7 +113,7 @@ export function calculateSavingsRateData(
   // Calculate period length for monthly projection
   const periodLengthDays = Math.ceil(
     (periodEndDate.getTime() - periodStartDate.getTime()) / (1000 * 60 * 60 * 24)
-  );
+  ) || 1; // ensure no division by zero if dates are same
   const monthlyMultiplier = 30 / periodLengthDays;
   const monthlySavings = totalSavings * monthlyMultiplier;
   const projectedAnnualSavings = monthlySavings * 12;
@@ -154,7 +154,8 @@ export function calculateSavingsRateData(
   const savingsByType = calculateSavingsByType(periodTransactions);
 
   // Calculate savings goals (simplified for now - in real app would come from database)
-  const savingsGoals = calculateSavingsGoals(transactions, periodEndDate);
+  const estimatedMonthlyExpenses = (totalExpenses / periodLengthDays) * 30; // Uses periodLengthDays from above
+  const savingsGoals = calculateSavingsGoals(transactions, periodEndDate, estimatedMonthlyExpenses);
 
   return {
     savingsRate: Math.round(savingsRate * 10) / 10, // Round to 1 decimal
@@ -190,18 +191,6 @@ function calculateSavingsStreak(transactions: Transaction[], endDate: Date): num
       return transactionDate >= monthStart && transactionDate <= monthEnd;
     });
 
-    // Define which asset categories count as savings
-    const SAVINGS_CATEGORIES = [
-      'savings-account', 
-      'general-savings', 
-      'emergency-fund',
-      'pension',
-      'mutual-funds',
-      'cryptocurrency',
-      'retirement-401k',
-      'retirement-ira'
-    ];
-    
     // Calculate actual savings from asset transactions
     const monthSavings = monthTransactions
       .filter(t => t.type === 'asset' && SAVINGS_CATEGORIES.includes(t.categoryId as any))
@@ -237,18 +226,6 @@ function calculateAverageSavingsRate(transactions: Transaction[], endDate: Date,
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    // Define which asset categories count as savings
-    const SAVINGS_CATEGORIES = [
-      'savings-account', 
-      'general-savings', 
-      'emergency-fund',
-      'pension',
-      'mutual-funds',
-      'cryptocurrency',
-      'retirement-401k',
-      'retirement-ira'
-    ];
-    
     // Calculate actual savings from asset transactions
     const monthSavings = monthTransactions
       .filter(t => t.type === 'asset' && SAVINGS_CATEGORIES.includes(t.categoryId as any))
@@ -551,53 +528,81 @@ function calculateSavingsByType(transactions: Transaction[]): {
  * Calculate savings goals from transactions (simplified implementation)
  * In a real app, this would come from a dedicated goals database
  */
-function calculateSavingsGoals(transactions: Transaction[], asOfDate: Date): SavingsGoal[] {
+export function calculateSavingsGoals(
+  transactions: Transaction[],
+  asOfDate: Date,
+  monthlyExpenses: number // Added for dynamic emergency fund calculation
+): SavingsGoal[] {
   // This is a simplified implementation that infers goals from transaction patterns
   // In a real app, users would explicitly create goals in the UI
   
   const goals: SavingsGoal[] = [];
 
   // Emergency fund goal
-  const emergencyFundTransactions = transactions.filter(t => 
-    ((t.type === 'expense' && t.categoryId === 'savings') || t.type === 'asset') &&
-    t.description?.toLowerCase().includes('emergency')
-  );
+  const emergencyFundTransactions = transactions.filter(t => {
+    const description = t.description?.toLowerCase() || "";
+    if (t.type === 'asset') {
+      // Asset is in a designated emergency fund category OR it's in a general savings category and description mentions emergency
+      return t.categoryId === 'emergency-fund' ||
+             (SAVINGS_CATEGORIES.includes(t.categoryId as any) && description.includes('emergency'));
+    }
+    if (t.type === 'expense' && t.categoryId === 'savings') {
+      // Expense is categorized as savings and description mentions emergency
+      return description.includes('emergency');
+    }
+    return false;
+  });
 
   if (emergencyFundTransactions.length > 0) {
     const currentAmount = emergencyFundTransactions.reduce((sum, t) => sum + t.amount, 0);
+    // Calculate dynamic target for emergency fund
+    const emergencyFundTarget = Math.max(5000, monthlyExpenses * 6); // Use monthlyExpenses
+
     goals.push({
       id: 'emergency-fund',
       name: 'Emergency Fund',
       type: 'emergency-fund',
-      targetAmount: 10000, // Simplified: assume €10k target
+      targetAmount: emergencyFundTarget, // Use calculated target
       currentAmount,
       priority: 'high',
-      isCompleted: currentAmount >= 10000,
-      progress: Math.min(100, (currentAmount / 10000) * 100)
+      isCompleted: currentAmount >= emergencyFundTarget, // Use calculated target
+      progress: emergencyFundTarget > 0 ? Math.min(100, (currentAmount / emergencyFundTarget) * 100) : 0 // Use calculated target
     });
   }
 
   // Retirement goal
-  const retirementTransactions = transactions.filter(t => 
-    ((t.type === 'expense' && t.categoryId === 'savings') || t.type === 'asset') &&
-    (t.description?.toLowerCase().includes('retirement') ||
-     t.description?.toLowerCase().includes('401k') ||
-     t.description?.toLowerCase().includes('ira') ||
-     t.categoryId === 'retirement-401k' ||
-     t.categoryId === 'retirement-ira')
-  );
+  const retirementTransactions = transactions.filter(t => {
+    const description = t.description?.toLowerCase() || "";
+    if (t.type === 'asset') {
+      // Asset is in a designated retirement category OR (it's a general saving asset AND description mentions retirement keywords)
+      return t.categoryId === 'retirement-401k' ||
+             t.categoryId === 'retirement-ira' ||
+             ((SAVINGS_CATEGORIES.includes(t.categoryId as any) || t.categoryId === 'investment') && // Consider general investments too for retirement assets
+              (description.includes('retirement') || description.includes('401k') || description.includes('ira')));
+    }
+    if (t.type === 'expense' && t.categoryId === 'savings') {
+      // Expense is categorized as savings and description mentions retirement keywords
+      return description.includes('retirement') ||
+             description.includes('401k') ||
+             description.includes('ira');
+    }
+    return false;
+  });
 
   if (retirementTransactions.length > 0) {
     const currentAmount = retirementTransactions.reduce((sum, t) => sum + t.amount, 0);
+    // TODO: This target should be user-configurable in future updates.
+    const retirementTarget = 500000; // Updated placeholder
+
     goals.push({
       id: 'retirement',
       name: 'Retirement Savings',
       type: 'retirement',
-      targetAmount: 100000, // Simplified: assume €100k target
+      targetAmount: retirementTarget, // Use updated target
       currentAmount,
       priority: 'high',
-      isCompleted: currentAmount >= 100000,
-      progress: Math.min(100, (currentAmount / 100000) * 100)
+      isCompleted: currentAmount >= retirementTarget, // Use updated target
+      progress: retirementTarget > 0 ? Math.min(100, (currentAmount / retirementTarget) * 100) : 0 // Use updated target
     });
   }
 
