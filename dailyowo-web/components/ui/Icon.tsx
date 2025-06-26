@@ -37,6 +37,8 @@ import {
   Upload,
   Share2,
   Copy,
+  Send,
+  RotateCcw,
   
   // UI
   Search,
@@ -53,6 +55,7 @@ import {
   AlertCircle,
   Info,
   HelpCircle,
+  Circle,
   
   // Features
   Target,
@@ -65,6 +68,9 @@ import {
   Unlock,
   Eye,
   EyeOff,
+  Star,
+  Lightbulb,
+  Rocket,
   
   // Categories
   ShoppingCart,
@@ -87,6 +93,7 @@ import {
   FileText,
   Loader2,
   Cloud,
+  WifiOff,
 } from 'lucide-react';
 
 // Size presets
@@ -120,6 +127,7 @@ const iconMap: Record<string, LucideIcon | (() => React.ReactElement)> = {
   chevronUp: ChevronUp,
   arrowLeft: ArrowLeft,
   arrowRight: ArrowRight,
+  'arrow-right': ArrowRight,
   
   // Finance
   dollar: DollarSign,
@@ -144,6 +152,8 @@ const iconMap: Record<string, LucideIcon | (() => React.ReactElement)> = {
   upload: Upload,
   share: Share2,
   copy: Copy,
+  send: Send,
+  refresh: RotateCcw,
   
   // UI
   search: Search,
@@ -160,18 +170,26 @@ const iconMap: Record<string, LucideIcon | (() => React.ReactElement)> = {
   alert: AlertCircle,
   info: Info,
   help: HelpCircle,
+  circle: Circle,
   
   // Features
   goal: Target,
+  target: Target,
   barChart: BarChart3,
   pieChart: PieChart,
   lineChart: LineChart,
   ai: Brain,
+  brain: Brain,
   shield: Shield,
   lock: Lock,
   unlock: Unlock,
   eye: Eye,
   eyeOff: EyeOff,
+  star: Star,
+  lightbulb: Lightbulb,
+  rocket: Rocket,
+  'trending-up': TrendingUp,
+  'trending-down': TrendingDown,
   
   // Categories
   shopping: ShoppingCart,
@@ -195,6 +213,8 @@ const iconMap: Record<string, LucideIcon | (() => React.ReactElement)> = {
   document: FileText,
   loader: Loader2,
   cloud: Cloud,
+  offline: WifiOff,
+  zap: Zap,
   google: () => (
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>

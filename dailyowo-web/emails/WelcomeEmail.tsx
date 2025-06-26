@@ -9,7 +9,7 @@ interface WelcomeEmailProps {
 export const WelcomeEmail: React.FC<WelcomeEmailProps> = ({
   userName,
 }) => {
-  const dashboardUrl = 'https://dailyowo.com/dashboard';
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`;
   
   return (
     <BaseEmail

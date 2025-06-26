@@ -5,7 +5,7 @@ import { getFirebaseDb } from './config';
  * Forces Firestore to reconnect by cycling the network connection
  */
 export async function forceFirestoreOnline() {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) return false;
 
   try {
@@ -67,4 +67,4 @@ export async function clearFirestoreCache() {
     console.error('Error clearing cache:', error);
     return false;
   }
-} 
+}

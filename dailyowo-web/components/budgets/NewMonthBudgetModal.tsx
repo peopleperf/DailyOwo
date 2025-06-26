@@ -16,6 +16,8 @@ interface NewMonthBudgetModalProps {
   lastMonthIncome?: number;
   currency: string;
   onSubmit: (income: number, method: 'zero-based' | '50-30-20' | 'custom') => void;
+  isLoading?: boolean;
+  error?: string | null;
 }
 
 export function NewMonthBudgetModal({
@@ -24,7 +26,9 @@ export function NewMonthBudgetModal({
   currentMonth,
   lastMonthIncome = 0,
   currency,
-  onSubmit
+  onSubmit,
+  isLoading = false,
+  error: externalError = null
 }: NewMonthBudgetModalProps) {
   const [income, setIncome] = useState(lastMonthIncome.toString());
   const [selectedMethod, setSelectedMethod] = useState<'zero-based' | '50-30-20' | 'custom'>('50-30-20');
@@ -38,8 +42,9 @@ export function NewMonthBudgetModal({
       return;
     }
 
+    setError(''); // Clear local error
     onSubmit(incomeAmount, selectedMethod);
-    onClose();
+    // Don't close modal here - let parent handle it after success
   };
 
   const handleIncomeChange = (value: string) => {
@@ -114,8 +119,8 @@ export function NewMonthBudgetModal({
                     Last month: {formatCurrency(lastMonthIncome, { currency })}
                   </p>
                 )}
-                {error && (
-                  <p className="text-xs text-red-500 mt-2">{error}</p>
+                {(error || externalError) && (
+                  <p className="text-xs text-red-500 mt-2">{error || externalError}</p>
                 )}
               </div>
 
@@ -144,10 +149,17 @@ export function NewMonthBudgetModal({
                 <GlassButton
                   variant="primary"
                   onClick={handleSubmit}
-                  disabled={!income || parseFloat(income) <= 0}
+                  disabled={!income || parseFloat(income) <= 0 || isLoading}
                   className="flex-1"
                 >
-                  Create Budget
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Creating...
+                    </div>
+                  ) : (
+                    'Create Budget'
+                  )}
                 </GlassButton>
               </div>
 

@@ -1,0 +1,1 @@
+// This file has been removed as part of the Owo AI redesign. All AI insights logic is now handled by the new OwoAIFloatButton and OwoAIModal components.

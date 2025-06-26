@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { SplashScreen } from './SplashScreen';
 import { useAuth } from '@/lib/firebase/auth-context';
+import { AIServiceManager } from '@/lib/ai/ai-service-manager';
 
 interface AppInitializerProps {
   children: React.ReactNode;
@@ -61,6 +62,29 @@ export function AppInitializer({ children }: AppInitializerProps) {
     }
   }, [isMounted, isInitialized, loading, user, pathname, router]);
 
+  // Initialize AI ServiceManager for all AI modules (including insights)
+  useEffect(() => {
+    // Only run on client side after mount
+    if (!isMounted) return;
+    if (process.env.NEXT_PUBLIC_AI_ENABLED === 'true') {
+      const geminiApiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+      if (!geminiApiKey) {
+        // eslint-disable-next-line no-console
+        console.warn('[AI] NEXT_PUBLIC_GEMINI_API_KEY is missing. Gemini provider will not be initialized.');
+        return;
+      }
+      AIServiceManager.getInstance().initialize({
+        defaultProvider: 'gemini',
+        providers: {
+          gemini: {
+            apiKey: geminiApiKey,
+            model: 'gemini-1.5-flash'
+          }
+        }
+      });
+    }
+  }, [isMounted]);
+
   // During SSR or before initialization
   if (!isMounted) {
     return <>{children}</>;
@@ -71,4 +95,4 @@ export function AppInitializer({ children }: AppInitializerProps) {
   }
 
   return <>{children}</>;
-} 
+}

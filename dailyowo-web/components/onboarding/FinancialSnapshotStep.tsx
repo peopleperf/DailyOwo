@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTranslations } from 'next-intl';
+
 import { GlassContainer } from '@/components/ui/GlassContainer';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { GlassInput } from '@/components/ui/GlassInput';
@@ -29,8 +29,6 @@ interface FinancialSnapshotStepProps {
 }
 
 export function FinancialSnapshotStep({ data, onNext, onBack, onSkip }: FinancialSnapshotStepProps) {
-  const t = useTranslations('onboarding.financialSnapshot');
-  const tCommon = useTranslations('common');
   
   const [showExpenseBreakdown, setShowExpenseBreakdown] = useState(false);
   const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([
@@ -139,11 +137,9 @@ export function FinancialSnapshotStep({ data, onNext, onBack, onSkip }: Financia
           >
             <DollarSign className="w-8 h-8 text-gold" />
           </motion.div>
-          <h2 className="text-2xl font-bold text-primary mb-2">
-            {t('title')}
-          </h2>
-          <p className="text-primary/60 text-sm">
-            {t('subtitle')}
+          <h2 className="text-2xl font-bold text-primary mb-2">Financial Snapshot</h2>
+          <p className="text-primary/70 max-w-md mx-auto">
+            Let's get a quick overview of your finances. This will help us personalize your experience.
           </p>
         </div>
 
@@ -151,7 +147,7 @@ export function FinancialSnapshotStep({ data, onNext, onBack, onSkip }: Financia
         <div className="grid md:grid-cols-2 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-primary mb-2">
-              {t('monthlyIncome')}
+              Monthly Income (after tax)
             </label>
             <GlassInput
               type="text"
@@ -161,21 +157,21 @@ export function FinancialSnapshotStep({ data, onNext, onBack, onSkip }: Financia
               icon={<DollarSign size={18} />}
               className="text-lg"
             />
-            <p className="text-xs text-primary/50 mt-1">{t('monthlyIncomeHelper')}</p>
+            <p className="text-xs text-primary/50 mt-1">Your take-home pay.</p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-primary mb-2">
-              {t('monthlyExpenses')}
-              {!showExpenseBreakdown && (
-                <button
-                  onClick={() => setShowExpenseBreakdown(true)}
-                  className="ml-2 text-xs text-gold hover:text-gold-dark transition-colors"
-                >
-                  Break down expenses
-                </button>
-              )}
-            </label>
+              Monthly Expenses
+            </label>  
+            {!showExpenseBreakdown && (
+              <button 
+                onClick={() => setShowExpenseBreakdown(!showExpenseBreakdown)}
+                className="text-sm text-gold hover:underline mt-2"
+              >
+                Or, break it down
+              </button>
+            )}
             {!showExpenseBreakdown ? (
               <>
                 <GlassInput
@@ -186,7 +182,7 @@ export function FinancialSnapshotStep({ data, onNext, onBack, onSkip }: Financia
                   icon={<CreditCard size={18} />}
                   className="text-lg"
                 />
-                <p className="text-xs text-primary/50 mt-1">{t('monthlyExpensesHelper')}</p>
+                <p className="text-xs text-primary/50 mt-1">Your estimated total monthly spending.</p>
               </>
             ) : (
               <motion.div
@@ -204,19 +200,19 @@ export function FinancialSnapshotStep({ data, onNext, onBack, onSkip }: Financia
                       transition={{ delay: index * 0.05 }}
                       className="flex gap-2"
                     >
-                      <input
+                      <GlassInput
                         type="text"
                         value={category.name}
                         onChange={(e) => handleCategoryChange(category.id, 'name', e.target.value)}
-                        placeholder="Category"
-                        className="glass-input flex-1 py-2 text-sm"
+                        placeholder="e.g., Shopping"
+                        className="text-sm"
                       />
-                      <input
+                      <GlassInput
                         type="text"
                         value={category.amount}
                         onChange={(e) => handleCategoryChange(category.id, 'amount', e.target.value)}
-                        placeholder="0"
-                        className="glass-input w-24 py-2 text-sm"
+                        placeholder="300"
+                        className="text-sm"
                       />
                       <button
                         onClick={() => removeCategory(category.id)}
@@ -227,13 +223,10 @@ export function FinancialSnapshotStep({ data, onNext, onBack, onSkip }: Financia
                     </motion.div>
                   ))}
                 </AnimatePresence>
-                <button
-                  onClick={addCategory}
-                  className="flex items-center gap-1 text-xs text-gold hover:text-gold-dark transition-colors mt-2"
-                >
-                  <Plus size={14} />
-                  Add category
-                </button>
+                <GlassButton size="sm" variant="ghost" onClick={addCategory} className="mt-2">
+                  <Plus size={16} className="mr-2" />
+                  Add Category
+                </GlassButton>
                 <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                   <span className="text-sm font-medium text-primary">Total</span>
                   <span className="text-sm font-semibold text-primary">
@@ -249,7 +242,7 @@ export function FinancialSnapshotStep({ data, onNext, onBack, onSkip }: Financia
 
           <div>
             <label className="block text-sm font-medium text-primary mb-2">
-              {t('currentSavings')}
+              Total Savings & Investments
             </label>
             <GlassInput
               type="text"
@@ -259,12 +252,12 @@ export function FinancialSnapshotStep({ data, onNext, onBack, onSkip }: Financia
               icon={<PiggyBank size={18} />}
               className="text-lg"
             />
-            <p className="text-xs text-primary/50 mt-1">{t('currentSavingsHelper')}</p>
+            <p className="text-xs text-primary/50 mt-1">Cash, stocks, retirement accounts, etc.</p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-primary mb-2">
-              {t('currentDebt')}
+              Total Debt
             </label>
             <GlassInput
               type="text"
@@ -274,7 +267,7 @@ export function FinancialSnapshotStep({ data, onNext, onBack, onSkip }: Financia
               icon={<TrendingDown size={18} />}
               className="text-lg"
             />
-            <p className="text-xs text-primary/50 mt-1">{t('currentDebtHelper')}</p>
+            <p className="text-xs text-primary/50 mt-1">Credit cards, loans, etc.</p>
           </div>
         </div>
 
@@ -288,22 +281,22 @@ export function FinancialSnapshotStep({ data, onNext, onBack, onSkip }: Financia
               className="overflow-hidden"
             >
               <div className="glass-subtle p-4 rounded-xl mb-6">
-                <h3 className="font-semibold text-primary mb-3 text-sm">{t('preview')}</h3>
+                <h3 className="font-semibold text-primary mb-3 text-sm">Quick Preview</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center">
-                    <p className="text-xs text-primary/60 mb-1">{t('monthlySavings')}</p>
+                    <p className="text-xs text-primary/60 mb-1">Monthly Savings</p>
                     <p className={`font-semibold ${calculations.monthlySavings >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatCurrency(Math.abs(calculations.monthlySavings), { currency: data.currency, compact: true })}
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-primary/60 mb-1">{tCommon('saveRate')}</p>
+                    <p className="text-xs text-primary/60 mb-1">Savings Rate</p>
                     <p className={`font-semibold ${calculations.savingsRate >= 20 ? 'text-green-600' : calculations.savingsRate >= 10 ? 'text-yellow-600' : 'text-red-600'}`}>
                       {calculations.savingsRate.toFixed(0)}%
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-primary/60 mb-1">{t('netWorth')}</p>
+                    <p className="text-xs text-primary/60 mb-1">Est. Net Worth</p>
                     <p className={`font-semibold ${calculations.netWorth >= 0 ? 'text-primary' : 'text-red-600'}`}>
                       {formatCurrency(Math.abs(calculations.netWorth), { currency: data.currency, compact: true })}
                     </p>
@@ -318,7 +311,7 @@ export function FinancialSnapshotStep({ data, onNext, onBack, onSkip }: Financia
         <div className="glass-subtle p-3 rounded-lg mb-6 flex items-start gap-2">
           <Icon name="info" size="xs" className="text-gold mt-0.5" />
           <p className="text-xs text-primary/60">
-            {t('dontWorry')}
+            Don't worry if these are not exact. You can always update them later.
           </p>
         </div>
 
@@ -329,21 +322,21 @@ export function FinancialSnapshotStep({ data, onNext, onBack, onSkip }: Financia
             onClick={onBack}
           >
             <Icon name="arrowLeft" size="sm" className="mr-2" />
-            {tCommon('back')}
+            Back
           </GlassButton>
           <div className="flex gap-3">
             <GlassButton
               variant="ghost"
               onClick={onSkip}
             >
-              {tCommon('skipForNow')}
+              Skip for Now
             </GlassButton>
             <GlassButton
               variant="primary"
               goldBorder
               onClick={handleContinue}
             >
-              {tCommon('continue')}
+              Continue
               <Icon name="arrowRight" size="sm" className="ml-2" />
             </GlassButton>
           </div>

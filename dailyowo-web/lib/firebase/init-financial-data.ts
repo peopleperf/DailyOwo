@@ -19,7 +19,7 @@ import { Liability } from '@/types/liability';
  * Onboarding data represents their current financial state, not transactions
  */
 export async function initializeFinancialDataFromProfile(userId: string, profile: any): Promise<void> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     console.warn('Firestore not initialized, skipping financial data initialization');
     return;
@@ -77,7 +77,7 @@ export async function initializeFinancialDataFromProfile(userId: string, profile
  * Check if user has any financial data
  */
 export async function hasFinancialData(userId: string): Promise<boolean> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) return false;
   
   try {
@@ -92,4 +92,4 @@ export async function hasFinancialData(userId: string): Promise<boolean> {
     console.error('Error checking financial data:', error);
     return false;
   }
-} 
+}

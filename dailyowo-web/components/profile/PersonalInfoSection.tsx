@@ -7,6 +7,7 @@ import { GlassButton } from '@/components/ui/GlassButton';
 import { GlassInput } from '@/components/ui/GlassInput';
 import { CollapsibleCard } from '@/components/ui/CollapsibleCard';
 import { useAuth } from '@/lib/firebase/auth-context';
+import { userProfileService } from '@/lib/firebase/user-profile-service';
 
 interface PersonalInfo {
   firstName: string;
@@ -74,17 +75,27 @@ export function PersonalInfoSection() {
   };
 
   const handleSave = async () => {
-    if (!validateForm()) return;
+    if (!validateForm() || !user) return;
 
     setIsSaving(true);
     try {
-      await updateUserProfile({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        age: formData.age ? Number(formData.age) : undefined,
-        displayName: formData.displayName,
-        bio: formData.bio,
-      });
+      // Update both the main profile and userProfile service
+      await Promise.all([
+        updateUserProfile({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          age: formData.age ? Number(formData.age) : undefined,
+          displayName: formData.displayName,
+          bio: formData.bio,
+        }),
+        userProfileService.updateUserProfile(user.uid, {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          age: formData.age ? Number(formData.age) : undefined,
+          displayName: formData.displayName,
+          bio: formData.bio,
+        })
+      ]);
       
       setIsEditing(false);
     } catch (error) {
@@ -117,19 +128,21 @@ export function PersonalInfoSection() {
       variant="ghost"
       size="sm"
       onClick={() => setIsEditing(true)}
+      className="px-4 py-2 font-light"
     >
-      <Edit3 className="w-3 h-3 mr-1" />
+      <Edit3 className="w-4 h-4 mr-2" />
       Edit
     </GlassButton>
   ) : (
-    <div className="flex gap-2">
+    <div className="flex gap-3">
       <GlassButton
         variant="ghost"
         size="sm"
         onClick={handleCancel}
         disabled={isSaving}
+        className="px-4 py-2 font-light"
       >
-        <X className="w-3 h-3 mr-1" />
+        <X className="w-4 h-4 mr-2" />
         Cancel
       </GlassButton>
       <GlassButton
@@ -138,15 +151,16 @@ export function PersonalInfoSection() {
         size="sm"
         onClick={handleSave}
         disabled={isSaving}
+        className="px-6 py-2 font-light bg-gold text-white"
       >
         {isSaving ? (
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs">Saving...</span>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <span>Saving...</span>
           </div>
         ) : (
           <>
-            <Save className="w-3 h-3 mr-1" />
+            <Save className="w-4 h-4 mr-2" />
             Save
           </>
         )}
@@ -155,14 +169,18 @@ export function PersonalInfoSection() {
   );
 
   return (
-    <CollapsibleCard
-      title="Personal Information"
-      subtitle="Your basic details"
-      icon={<User className="w-5 h-5 text-gold" />}
-      defaultExpanded={true}
-    >
-      {/* Action Buttons */}
-      <div className="flex justify-end mb-4">
+    <div className="glass p-8 rounded-2xl border border-white/20">
+      {/* Premium Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 glass rounded-xl flex items-center justify-center">
+            <User className="w-5 h-5 text-gold" />
+          </div>
+          <div>
+            <h2 className="text-lg font-light text-primary">Personal Info</h2>
+            <p className="text-xs font-light text-primary/40 uppercase tracking-wide">Your Profile Details</p>
+          </div>
+        </div>
         {actionButton}
       </div>
       
@@ -171,17 +189,17 @@ export function PersonalInfoSection() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg"
+          className="mb-6 p-4 bg-red-50/50 border border-red-200/50 rounded-xl"
         >
-          <p className="text-xs text-red-600">{errors.general}</p>
+          <p className="text-sm font-light text-red-600">{errors.general}</p>
         </motion.div>
       )}
 
-      <div className="space-y-4">
-        {/* Compact Name Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+      <div className="space-y-6">
+        {/* Premium Name Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div>
-            <label className="block text-xs font-medium text-primary mb-1">
+            <label className="block text-xs font-light text-primary/60 mb-2 uppercase tracking-wide">
               First Name
             </label>
             {isEditing ? (
@@ -189,20 +207,20 @@ export function PersonalInfoSection() {
                 type="text"
                 value={formData.firstName}
                 onChange={(e) => handleInputChange('firstName', e.target.value)}
-                placeholder="John"
+                placeholder="First Name"
                 error={errors.firstName}
                 autoComplete="given-name"
-                className="text-sm py-2"
+                className="glass-input font-light py-3"
               />
             ) : (
-              <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-primary">
+              <div className="px-4 py-3 glass rounded-xl font-light text-primary">
                 {formData.firstName || 'Not set'}
               </div>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-primary mb-1">
+            <label className="block text-xs font-light text-primary/60 mb-2 uppercase tracking-wide">
               Last Name
             </label>
             {isEditing ? (
@@ -210,20 +228,20 @@ export function PersonalInfoSection() {
                 type="text"
                 value={formData.lastName}
                 onChange={(e) => handleInputChange('lastName', e.target.value)}
-                placeholder="Doe"
+                placeholder="Last Name"
                 error={errors.lastName}
                 autoComplete="family-name"
-                className="text-sm py-2"
+                className="glass-input font-light py-3"
               />
             ) : (
-              <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-primary">
+              <div className="px-4 py-3 glass rounded-xl font-light text-primary">
                 {formData.lastName || 'Not set'}
               </div>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-primary mb-1">
+            <label className="block text-xs font-light text-primary/60 mb-2 uppercase tracking-wide">
               Age
             </label>
             {isEditing ? (
@@ -231,72 +249,88 @@ export function PersonalInfoSection() {
                 type="number"
                 value={formData.age}
                 onChange={(e) => handleInputChange('age', e.target.value)}
-                placeholder="25"
+                placeholder="Age"
                 error={errors.age}
                 min="13"
                 max="120"
-                className="text-sm py-2"
+                className="glass-input font-light py-3"
               />
             ) : (
-              <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-primary">
-                {formData.age ? `${formData.age} years` : 'Not set'}
+              <div className="px-4 py-3 glass rounded-xl font-light text-primary">
+                {formData.age || 'Not set'}
               </div>
             )}
           </div>
         </div>
 
-        {/* Display Name (Read-only) */}
+        {/* Premium Display Name */}
         <div>
-          <label className="block text-xs font-medium text-primary mb-1">
-            Display Name
+          <label className="block text-xs font-light text-primary/60 mb-2 uppercase tracking-wide">
+            Full Name
           </label>
-          <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-primary/70">
-            {formData.displayName || 'Auto-generated from name'}
-            <span className="text-xs text-primary/40 block">
+          <div className="px-4 py-3 glass rounded-xl font-light text-primary">
+            {formData.displayName || 'Not set'}
+            <span className="text-xs font-light text-primary/40 block mt-1">
               How you appear to family members
             </span>
           </div>
         </div>
 
-        {/* Compact Bio */}
+        {/* Premium Bio */}
         {isEditing && (
           <div>
-            <label className="block text-xs font-medium text-primary mb-1">
+            <label className="block text-xs font-light text-primary/60 mb-2 uppercase tracking-wide">
               Bio (Optional)
             </label>
             <textarea
               value={formData.bio}
               onChange={(e) => handleInputChange('bio', e.target.value)}
-              placeholder="Tell your family about yourself..."
-              className="w-full px-3 py-2 bg-white/50 border border-gray-200 rounded-lg focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm resize-none"
-              rows={2}
+              placeholder="Tell us about yourself..."
+              className="w-full px-4 py-3 glass rounded-xl focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all font-light resize-none"
+              rows={3}
             />
           </div>
         )}
 
-        {/* Compact Account Info Row */}
-        <div className="border-t border-gray-100 pt-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Premium Account Info */}
+        <div className="border-t border-white/10 pt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
-              <label className="block text-xs font-medium text-primary mb-1">
+              <label className="block text-xs font-light text-primary/60 mb-2 uppercase tracking-wide">
                 Email Address
               </label>
-              <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-primary/70 truncate">
+              <div className="px-4 py-3 glass rounded-xl font-light text-primary truncate">
                 {user?.email}
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-primary mb-1">
-                Member Since
-              </label>
-              <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-primary/70">
-                {userProfile?.createdAt?.toDate?.()?.toLocaleDateString() || 'Unknown'}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-light text-primary/60 mb-2 uppercase tracking-wide">
+                  Member Since
+                </label>
+                <div className="px-4 py-3 glass rounded-xl font-light text-primary">
+                  {user?.metadata?.creationTime 
+                    ? new Date(user.metadata.creationTime).toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'long' 
+                      })
+                    : 'Not available'
+                  }
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-light text-primary/60 mb-2 uppercase tracking-wide">
+                  Onboarding Status
+                </label>
+                <div className="px-4 py-3 glass rounded-xl font-light text-primary">
+                  {userProfile?.onboardingCompleted ? 'Completed' : 'Pending'}
+                </div>
               </div>
             </div>
           </div>
           
-          <p className="text-xs text-primary/40 mt-2">
+          <p className="text-xs font-light text-primary/40 mt-4">
             Contact support to change your email address
           </p>
         </div>
@@ -304,15 +338,15 @@ export function PersonalInfoSection() {
         {/* Bio Display (when not editing) */}
         {!isEditing && formData.bio && (
           <div>
-            <label className="block text-xs font-medium text-primary mb-1">
+            <label className="block text-xs font-light text-primary/60 mb-2 uppercase tracking-wide">
               Bio
             </label>
-            <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-primary min-h-[40px]">
+            <div className="px-4 py-3 glass rounded-xl font-light text-primary min-h-[48px]">
               {formData.bio}
             </div>
           </div>
         )}
       </div>
-    </CollapsibleCard>
+    </div>
   );
 } 

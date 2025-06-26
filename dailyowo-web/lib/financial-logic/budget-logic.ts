@@ -169,33 +169,44 @@ export function calculateBudgetData(
     count: transactions.length
   });
 
-  // If transactions are outside budget period, adjust the filter
+  // TEMPORARY FIX: Use all transactions to debug the Total Income/Spent issue
+  // Skip strict date filtering for now to ensure we see transaction data
   let periodTransactions = transactions;
   
-  // If budget period doesn't match transaction dates, use transaction date range
-  if (latestTransaction < budget.period.startDate || earliestTransaction > budget.period.endDate) {
-    console.log('Budget period mismatch - using all transactions for current month');
-    // Get current month transactions based on the latest transaction date
-    const referenceDate = latestTransaction > currentDate ? latestTransaction : currentDate;
-    const monthStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
-    const monthEnd = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0);
+  console.log(`[Budget] USING ALL TRANSACTIONS FOR DEBUGGING - Total: ${transactions.length}`);
+  console.log(`[Budget] Raw transactions data:`, transactions.map(t => ({
+    id: t.id,
+    type: t.type,
+    amount: t.amount,
+    categoryId: t.categoryId,
+    date: t.date,
+    description: t.description
+  })));
+  console.log(`[Budget] Budget period: ${budget.period.startDate} to ${budget.period.endDate}`);
+  
+  // Log transaction date ranges for debugging
+  if (transactions.length > 0) {
+    const transactionDates = transactions.map(t => new Date(t.date));
+    const earliestTransaction = new Date(Math.min(...transactionDates.map(d => d.getTime())));
+    const latestTransaction = new Date(Math.max(...transactionDates.map(d => d.getTime())));
     
-    periodTransactions = transactions.filter(t => {
-      const tDate = new Date(t.date);
-      return tDate >= monthStart && tDate <= monthEnd;
-    });
-  } else {
-    // Normal period filtering
-    periodTransactions = transactions.filter(t => 
-      new Date(t.date) >= budget.period.startDate && 
-      new Date(t.date) <= budget.period.endDate
-    );
+    console.log(`[Budget] Transaction date range: ${earliestTransaction} to ${latestTransaction}`);
   }
 
   console.log(`Filtered ${periodTransactions.length} transactions for budget calculation`);
+  console.log('Period transactions:', periodTransactions.map(t => ({ 
+    id: t.id, 
+    type: t.type, 
+    amount: t.amount, 
+    date: t.date, 
+    description: t.description 
+  })));
 
   // Calculate income
   const totalIncome = calculateTotalIncome(periodTransactions);
+  console.log(`[Budget] Income calculation - Found ${periodTransactions.filter(t => t.type === 'income').length} income transactions`);
+  console.log(`[Budget] Income transactions:`, periodTransactions.filter(t => t.type === 'income').map(t => ({ amount: t.amount, description: t.description, date: t.date })));
+  console.log(`[Budget] Total Income calculated: ${totalIncome}`);
 
   // Calculate category spending
   const updatedCategories = calculateCategorySpending(budget.categories, periodTransactions);
@@ -217,6 +228,9 @@ export function calculateBudgetData(
   const totalExpenses = periodTransactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
+  console.log(`[Budget] Expense calculation - Found ${periodTransactions.filter(t => t.type === 'expense').length} expense transactions`);
+  console.log(`[Budget] Expense transactions:`, periodTransactions.filter(t => t.type === 'expense').map(t => ({ amount: t.amount, description: t.description, date: t.date })));
+  console.log(`[Budget] Total Expenses calculated: ${totalExpenses}`);
   
   // Debt payments (liability transactions are debt payments)
   const totalDebtPayments = periodTransactions
@@ -261,7 +275,33 @@ export function calculateBudgetData(
     totalIncome,
     totalSpent,
     totalAllocated,
+    totalExpenses,
+    totalDebtPayments,
+    totalSavings,
+    periodTransactionsCount: periodTransactions.length,
+    incomeTransactions: periodTransactions.filter(t => t.type === 'income').length,
+    expenseTransactions: periodTransactions.filter(t => t.type === 'expense').length,
     categoriesWithSpending: updatedCategories.filter(c => c.spent > 0).length
+  });
+
+  // CRITICAL: Log the exact values being returned
+  const finalResult = {
+    totalIncome,
+    totalAllocated,
+    totalExpenseAllocated,
+    totalSavingsAllocated,
+    totalSpent,
+    totalSavings,
+    cashAtHand,
+    unallocatedAmount
+  };
+  
+  console.log('🚨 FINAL BUDGET DATA VALUES:', finalResult);
+  console.log('🚨 These are the values that should appear in the UI:', {
+    'Total Income card': totalIncome,
+    'Total Spent card': totalSpent,
+    'Allocated card': totalAllocated,
+    'Cash at Hand card': cashAtHand
   });
 
   return {

@@ -49,14 +49,14 @@ class SessionService {
     this.initializeDb();
   }
 
-  private initializeDb() {
+  private async initializeDb() {
     if (typeof window === 'undefined') return;
-    this.db = getFirebaseDb();
+    this.db = await getFirebaseDb();
   }
 
-  private getDb() {
+  private async getDb() {
     if (!this.db) {
-      this.initializeDb();
+      await this.initializeDb();
     }
     return this.db;
   }
@@ -64,7 +64,7 @@ class SessionService {
   // ============= SESSION MANAGEMENT =============
 
   async createSession(userId: string, sessionData: Partial<UserSession>): Promise<UserSession> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const deviceInfo = this.getDeviceInfo();
@@ -110,7 +110,7 @@ class SessionService {
   }
 
   async getActiveSessions(userId: string): Promise<UserSession[]> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const sessionsRef = collection(db, 'users', userId, 'sessions');
@@ -147,7 +147,7 @@ class SessionService {
   }
 
   async updateSessionActivity(userId: string, sessionId: string): Promise<void> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     await updateDoc(doc(db, 'users', userId, 'sessions', sessionId), {
@@ -156,7 +156,7 @@ class SessionService {
   }
 
   async revokeSession(userId: string, sessionId: string): Promise<void> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     await updateDoc(doc(db, 'users', userId, 'sessions', sessionId), {
@@ -165,7 +165,7 @@ class SessionService {
   }
 
   async revokeAllSessions(userId: string, exceptSessionId?: string): Promise<void> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const sessions = await this.getActiveSessions(userId);
@@ -180,7 +180,7 @@ class SessionService {
   // ============= LOGIN ACTIVITY TRACKING =============
 
   async logLoginActivity(userId: string, activityData: Partial<LoginActivity>): Promise<void> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const activity: LoginActivity = {
@@ -205,7 +205,7 @@ class SessionService {
   }
 
   async getRecentLoginActivities(userId: string, limitCount: number = 10): Promise<LoginActivity[]> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const activitiesRef = collection(db, 'users', userId, 'loginActivities');
@@ -299,7 +299,7 @@ class SessionService {
   // ============= CLEANUP FUNCTIONS =============
 
   async cleanupOldSessions(userId: string, olderThanDays: number = 30): Promise<void> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const cutoffDate = new Date();
@@ -318,7 +318,7 @@ class SessionService {
   }
 
   async cleanupOldLoginActivities(userId: string, olderThanDays: number = 90): Promise<void> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const cutoffDate = new Date();
@@ -337,4 +337,4 @@ class SessionService {
   }
 }
 
-export const sessionService = new SessionService(); 
+export const sessionService = new SessionService();

@@ -17,6 +17,7 @@ import {
 import { getFirebaseDb } from '@/lib/firebase/config';
 import { prepareForStorage, prepareForDisplay, hashValue } from '@/lib/utils/encryption';
 import { createAuditEntry } from '@/lib/utils/transaction-audit';
+import { storeAuditEntry } from '@/lib/services/audit-storage-service';
 
 /**
  * Secure Transaction Service
@@ -41,7 +42,7 @@ export async function createSecureTransaction(
   data: CreateTransactionData
 ): Promise<string> {
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) {
       throw new Error('Firebase is not initialized');
     }
@@ -65,8 +66,9 @@ export async function createSecureTransaction(
       ...(data.cardNumber && { cardNumberHash: hashValue(data.cardNumber) }),
     };
 
-    // Add to Firestore
-    const docRef = await addDoc(collection(db, 'transactions'), searchableData);
+    // Add to Firestore using user's subcollection
+    const userDocRef = doc(db, 'users', userId);
+    const docRef = await addDoc(collection(userDocRef, 'transactions'), searchableData);
 
     // Audit the creation
     const auditEntry = createAuditEntry(
@@ -81,8 +83,8 @@ export async function createSecureTransaction(
       }
     );
     
-    // TODO: Save audit entry to Firestore
-    // await addDoc(collection(db, 'auditTrail'), auditEntry);
+    // Store audit entry
+    await storeAuditEntry(auditEntry);
 
     return docRef.id;
   } catch (error) {
@@ -105,14 +107,14 @@ export async function getSecureTransactions(
   }
 ): Promise<Transaction[]> {
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) {
       throw new Error('Firebase is not initialized');
     }
 
+    const userDocRef = doc(db, 'users', userId);
     let q = query(
-      collection(db, 'transactions'),
-      where('userId', '==', userId),
+      collection(userDocRef, 'transactions'),
       orderBy('date', 'desc')
     );
 
@@ -170,12 +172,13 @@ export async function getSecureTransaction(
   userId: string
 ): Promise<Transaction | null> {
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) {
       throw new Error('Firebase is not initialized');
     }
 
-    const docRef = doc(db, 'transactions', transactionId);
+    const userDocRef = doc(db, 'users', userId);
+    const docRef = doc(userDocRef, 'transactions', transactionId);
     const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists()) {
@@ -214,7 +217,7 @@ export async function updateSecureTransaction(
   updates: UpdateTransactionData
 ): Promise<void> {
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) {
       throw new Error('Firebase is not initialized');
     }
@@ -242,7 +245,8 @@ export async function updateSecureTransaction(
     };
 
     // Update in Firestore
-    await updateDoc(doc(db, 'transactions', transactionId), searchableUpdates);
+    const userDocRef = doc(db, 'users', userId);
+    await updateDoc(doc(userDocRef, 'transactions', transactionId), searchableUpdates);
 
     // Audit the update
     const auditEntry = createAuditEntry(
@@ -258,8 +262,8 @@ export async function updateSecureTransaction(
       }
     );
     
-    // TODO: Save audit entry to Firestore
-    // await addDoc(collection(db, 'auditTrail'), auditEntry);
+    // Store audit entry
+    await storeAuditEntry(auditEntry);
   } catch (error) {
     console.error('Error updating secure transaction:', error);
     throw error;
@@ -274,7 +278,7 @@ export async function deleteSecureTransaction(
   userId: string
 ): Promise<void> {
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) {
       throw new Error('Firebase is not initialized');
     }
@@ -286,7 +290,8 @@ export async function deleteSecureTransaction(
     }
 
     // Soft delete by marking as deleted
-    await updateDoc(doc(db, 'transactions', transactionId), {
+    const userDocRef = doc(db, 'users', userId);
+    await updateDoc(doc(userDocRef, 'transactions', transactionId), {
       deleted: true,
       deletedAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -305,8 +310,8 @@ export async function deleteSecureTransaction(
       }
     );
     
-    // TODO: Save audit entry to Firestore
-    // await addDoc(collection(db, 'auditTrail'), auditEntry);
+    // Store audit entry
+    await storeAuditEntry(auditEntry);
   } catch (error) {
     console.error('Error deleting secure transaction:', error);
     throw error;
@@ -392,4 +397,4 @@ export async function exportSecureTransactions(
     console.error('Error exporting secure transactions:', error);
     throw error;
   }
-} 
+}

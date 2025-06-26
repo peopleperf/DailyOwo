@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useTranslations } from 'next-intl';
+
 import { GlassContainer } from '@/components/ui/GlassContainer';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { Icon } from '@/components/ui/Icon';
@@ -65,8 +65,6 @@ const REGIONS = [
 ];
 
 export function RegionStep({ data, onNext, onBack }: RegionStepProps) {
-  const t = useTranslations('onboarding.region');
-  const tCommon = useTranslations('common');
   const [selectedRegion, setSelectedRegion] = useState(data.region || '');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -89,17 +87,17 @@ export function RegionStep({ data, onNext, onBack }: RegionStepProps) {
     <GlassContainer className="p-8 md:p-10">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-primary mb-2">
-          {t('title')}
+          Select Your Region
         </h2>
         <p className="text-primary/70">
-          {t('subtitle')}
+          This helps us tailor your financial experience.
         </p>
       </div>
 
       {/* Region selection */}
       <div className="mb-8">
         <label className="block text-sm font-medium text-primary mb-4">
-          {t('selectRegion')}
+          Select your region
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {REGIONS.map((region) => (
@@ -138,7 +136,7 @@ export function RegionStep({ data, onNext, onBack }: RegionStepProps) {
       <div className="glass-subtle p-4 rounded-xl mb-8 flex items-start gap-3">
         <Icon name="info" size="sm" className="text-gold mt-0.5" />
         <div className="text-sm text-primary/70">
-          <p>{t('moreLanguagesComing')}</p>
+          <p>More languages and regions are coming soon!</p>
         </div>
       </div>
 
@@ -149,14 +147,14 @@ export function RegionStep({ data, onNext, onBack }: RegionStepProps) {
           onClick={onBack}
         >
           <Icon name="arrowLeft" size="sm" className="mr-2" />
-          {tCommon('back')}
+          Back
         </GlassButton>
         <GlassButton
           variant="primary"
           goldBorder
           onClick={handleContinue}
         >
-          {tCommon('continue')}
+          Continue
           <Icon name="arrowRight" size="sm" className="ml-2" />
         </GlassButton>
       </div>

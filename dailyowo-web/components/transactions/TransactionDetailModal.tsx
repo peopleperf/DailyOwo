@@ -7,7 +7,7 @@ import { GlassContainer } from '@/components/ui/GlassContainer';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { formatCurrency } from '@/lib/utils/format';
 import { useAuth } from '@/lib/firebase/auth-context';
-import { useLocale } from 'next-intl';
+
 
 interface TransactionDetailModalProps {
   isOpen: boolean;
@@ -44,7 +44,6 @@ export function TransactionDetailModal({
   onDelete,
 }: TransactionDetailModalProps) {
   const { userProfile } = useAuth();
-  const locale = useLocale();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleDelete = () => {
@@ -57,7 +56,7 @@ export function TransactionDetailModal({
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString(locale, {
+    return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -66,7 +65,7 @@ export function TransactionDetailModal({
   };
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString(locale, {
+    return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -127,7 +126,7 @@ export function TransactionDetailModal({
                     {transaction.type === 'income' ? '+' : '-'}
                     {formatCurrency(transaction.amount, { 
                       currency: transaction.currency || userProfile?.currency || 'USD', 
-                      locale 
+                      locale: 'en-US'
                     })}
                   </p>
                   

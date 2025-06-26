@@ -218,4 +218,4 @@ export function BudgetInsightsTab({ budgetData, currency }: BudgetInsightsTabPro
       </motion.div>
     </div>
   );
-} 
+}

@@ -50,25 +50,26 @@ if (typeof window !== 'undefined') {
   };
   
   // Track Firestore errors to prevent infinite loops
+  // Initialize error tracking variables
   let firestoreErrorCount = 0;
   let lastErrorTime = 0;
   let isRecovering = false;
   
   // Log Firestore internal errors and provide recovery options
-  console.error = (...args) => {
+  console.error = async (...args) => {
     if (args[0]?.includes && args[0].includes('FIRESTORE (11.9.0) INTERNAL ASSERTION FAILED')) {
       const now = Date.now();
-      
-      // Log to diagnostics
-      firestoreDiagnostics.logError({
-        code: 'INTERNAL_ASSERTION',
-        message: args[0],
-        timestamp: now
-      });
       
       // Extract error ID for tracking
       const errorIdMatch = args[0].match(/\(ID: ([^)]+)\)/);
       const errorId = errorIdMatch ? errorIdMatch[1] : 'unknown';
+      
+      // Log to diagnostics with specific error ID
+      firestoreDiagnostics.logError({
+        code: `INTERNAL_ASSERTION_${errorId}`,
+        message: args[0],
+        timestamp: now
+      });
       
       // Prevent rapid error logging
       if (now - lastErrorTime < 1000) {
@@ -81,6 +82,18 @@ if (typeof window !== 'undefined') {
       // Set bypass flag immediately on first error
       if (firestoreErrorCount === 1) {
         sessionStorage.setItem('firestore_bypass_persistence', 'true');
+        // For da08 errors, also force clear cache immediately
+        if (errorId === 'da08') {
+          localStorage.setItem('firestore_needs_cache_clear', 'true');
+          try {
+            if (db) {
+              await terminate(db);
+              db = null;
+            }
+          } catch (e) {
+            console.warn('Error terminating Firestore:', e);
+          }
+        }
         originalError.apply(console, [
           `[Firestore Recovery] Internal error detected (ID: ${errorId}). Persistence will be disabled on next load.`
         ]);
@@ -89,15 +102,26 @@ if (typeof window !== 'undefined') {
       // Log recovery suggestion after multiple errors
       if (firestoreErrorCount > 2 && !isRecovering) {
         isRecovering = true;
-        originalError.apply(console, [
-          `[Firestore Recovery] Multiple internal errors detected (ID: ${errorId}).`,
-          '\n\n🔧 QUICK FIX: Visit http://localhost:3001/clear-cache to automatically clear your cache.',
-          '\n\nOr manually:',
-          '\n1. Open Developer Tools (F12)',
-          '\n2. Go to Application/Storage tab',
-          '\n3. Clear Site Data',
-          '\n4. Refresh the page'
-        ]);
+        // Special handling for da08 errors
+        if (errorId === 'da08') {
+          originalError.apply(console, [
+            `[Firestore Recovery] Critical internal error detected (ID: ${errorId}).`,
+            '\n\n⚠️ This is a known Firestore SDK issue. Recommended actions:',
+            '\n1. Clear browser cache completely',
+            '\n2. Try in a different browser',
+            '\n3. If issue persists, consider updating Firebase SDK version'
+          ]);
+        } else {
+          originalError.apply(console, [
+            `[Firestore Recovery] Multiple internal errors detected (ID: ${errorId}).`,
+            '\n\n🔧 QUICK FIX: Visit http://localhost:3001/clear-cache to automatically clear your cache.',
+            '\n\nOr manually:',
+            '\n1. Open Developer Tools (F12)',
+            '\n2. Go to Application/Storage tab',
+            '\n3. Clear Site Data',
+            '\n4. Refresh the page'
+          ]);
+        }
         
         // Dispatch event for app to handle
         window.dispatchEvent(new CustomEvent('firestore-error', { 
@@ -121,17 +145,8 @@ export function initializeFirebaseIfNeeded() {
     return { app, auth, db, storage, functions, analytics };
   }
 
-  if (typeof window === 'undefined' || !firebaseConfig) {
+  if (!firebaseConfig) {
     return { app, auth, db, storage, functions, analytics };
-  }
-
-  // Check if we're in bypass mode due to persistent errors
-  const bypassPersistence = 
-    window.location.search.includes('bypass_persistence=true') ||
-    sessionStorage.getItem('firestore_bypass_persistence') === 'true';
-  
-  if (bypassPersistence) {
-    sessionStorage.setItem('firestore_bypass_persistence', 'true');
   }
 
   // If initialization is already in progress, wait for it
@@ -160,58 +175,62 @@ export function initializeFirebaseIfNeeded() {
       // Initialize auth with persistence
       auth = getAuth(app);
       
-      // Set auth persistence to local (survives browser restarts)
-      try {
-        await setPersistence(auth, browserLocalPersistence);
-        console.log('Auth persistence set to local');
-      } catch (error) {
-        console.warn('Failed to set auth persistence:', error);
-      }
-      
-      // Initialize Firestore without persistence to avoid cache issues
-      try {
-        // Check if we need to clear cache based on localStorage flag
-        const shouldClearCache = localStorage.getItem('firestore_needs_cache_clear') === 'true';
-        const bypassPersistence = sessionStorage.getItem('firestore_bypass_persistence') === 'true';
-        
-        if (shouldClearCache || window.location.search.includes('clear_cache=true') || bypassPersistence) {
-          console.log('Cache issues detected or bypass requested, using memory-only cache');
-          // Use memory-only cache to avoid persistence issues
-          db = initializeFirestore(app, {
-            localCache: undefined // This disables persistence
-          });
-          if (shouldClearCache) {
-            localStorage.removeItem('firestore_needs_cache_clear');
+      // Initialize services differently for client and server
+      if (typeof window !== 'undefined') {
+        // CLIENT-SIDE INITIALIZATION
+        console.log('Performing client-side Firebase initialization...');
+
+        // Set auth persistence to local (survives browser restarts)
+        try {
+          await setPersistence(auth, browserLocalPersistence);
+          console.log('Auth persistence set to local');
+        } catch (error) {
+          console.warn('Failed to set auth persistence:', error);
+        }
+
+        // Initialize Firestore with persistence and recovery logic
+        try {
+          const shouldClearCache = localStorage.getItem('firestore_needs_cache_clear') === 'true';
+          const bypassPersistence = sessionStorage.getItem('firestore_bypass_persistence') === 'true';
+
+          if (shouldClearCache || window.location.search.includes('clear_cache=true') || bypassPersistence) {
+            console.log('Cache issues detected or bypass requested, using memory-only cache');
+            db = initializeFirestore(app, { localCache: undefined });
+            if (shouldClearCache) {
+              localStorage.removeItem('firestore_needs_cache_clear');
+            }
+            console.log('Firestore initialized with memory cache only (no persistence)');
+          } else {
+            try {
+              db = initializeFirestore(app, {
+                localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+              });
+              console.log('Firestore initialized with persistent cache');
+            } catch (persistError) {
+              console.warn('Persistence failed, falling back to memory cache:', persistError);
+              localStorage.setItem('firestore_needs_cache_clear', 'true');
+              db = initializeFirestore(app, { localCache: undefined });
+              console.log('Firestore initialized with memory cache only');
+            }
           }
-          console.log('Firestore initialized with memory cache only (no persistence)');
-        } else {
-          // Try with persistence first
+        } catch (error) {
+          console.error('Unable to initialize Firestore on client:', error);
           try {
-            db = initializeFirestore(app, {
-              localCache: persistentLocalCache({
-                tabManager: persistentMultipleTabManager()
-              })
-            });
-            console.log('Firestore initialized with persistent cache');
-          } catch (persistError) {
-            console.warn('Persistence failed, falling back to memory cache:', persistError);
-            // Mark that we need cache clear on next load
-            localStorage.setItem('firestore_needs_cache_clear', 'true');
-            // Use memory cache as fallback
-            db = initializeFirestore(app, {
-              localCache: undefined
-            });
-            console.log('Firestore initialized with memory cache only');
+            db = getFirestore(app);
+            console.log('Firestore initialized with basic settings as a fallback on client');
+          } catch (finalError) {
+            console.error('Complete client Firestore initialization failure:', finalError);
+            db = null;
           }
         }
-      } catch (error) {
-        console.error('Unable to initialize Firestore:', error);
-        // Last resort - try basic getFirestore
+      } else {
+        // SERVER-SIDE INITIALIZATION
+        console.log('Performing server-side Firebase initialization...');
         try {
           db = getFirestore(app);
-          console.log('Firestore initialized with basic settings');
-        } catch (finalError) {
-          console.error('Complete Firestore initialization failure:', finalError);
+          console.log('Firestore initialized for server-side.');
+        } catch (error) {
+          console.error('Unable to initialize Firestore on server:', error);
           db = null;
         }
       }
@@ -265,9 +284,21 @@ export function getFirebaseAuth() {
   return firebaseAuth;
 }
 
-export function getFirebaseDb() {
-  const { db: firebaseDb } = initializeFirebaseIfNeeded();
-  return firebaseDb;
+export async function getFirebaseDb() {
+  // Ensure initialization is triggered and wait for it if necessary
+  const { db: initialDb } = initializeFirebaseIfNeeded();
+  
+  if (initialDb) {
+    return initialDb;
+  }
+
+  // If initialization is in progress, wait for the promise
+  if (initializationPromise) {
+    await initializationPromise;
+  }
+
+  // Return the initialized db (will be null if initialization failed)
+  return db;
 }
 
 export function getFirebaseStorage() {

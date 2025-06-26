@@ -102,7 +102,7 @@ export async function createRecalculationJob(
   triggerType: RecalculationJob['triggerType'],
   affectedDateRange: { start: Date; end: Date }
 ): Promise<string> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     throw new Error('Firebase is not initialized');
   }
@@ -138,7 +138,7 @@ async function processRecalculationJob(
   userId: string,
   dateRange: { start: Date; end: Date }
 ): Promise<void> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     throw new Error('Firebase is not initialized');
   }
@@ -493,7 +493,7 @@ export async function getHistoricalSnapshots(
   endDate: Date,
   type: HistoricalSnapshot['type'] = 'daily'
 ): Promise<HistoricalSnapshot[]> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     throw new Error('Firebase is not initialized');
   }
@@ -541,7 +541,7 @@ export async function triggerHistoricalRecalculation(
 export async function getRecalculationStatus(
   userId: string
 ): Promise<RecalculationJob | null> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     throw new Error('Firebase is not initialized');
   }
@@ -567,4 +567,4 @@ export async function getRecalculationStatus(
     startedAt: doc.data().startedAt?.toDate(),
     completedAt: doc.data().completedAt?.toDate(),
   } as RecalculationJob;
-} 
+}

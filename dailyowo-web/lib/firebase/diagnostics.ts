@@ -39,10 +39,10 @@ export function getFirestoreDiagnostics(): FirestoreDiagnostics {
     };
   }
 
-  const db = getFirebaseDb();
-  
+  // NOTE: getFirebaseDb is async, but diagnostics is sync, so check for initialization only
+  const db = null; // Can't await in sync function
   return {
-    isInitialized: db !== null,
+    isInitialized: false, // Can't guarantee in sync context
     activeListeners: getActiveListenerCount(),
     failedListeners: getFailedListeners(),
     connectionStatus: navigator.onLine ? 'online' : 'offline',
@@ -55,9 +55,8 @@ export function getFirestoreDiagnostics(): FirestoreDiagnostics {
  */
 export async function forceOffline(): Promise<void> {
   if (!isClient) return;
-  
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (db) {
       await disableNetwork(db);
       console.log('Firestore forced offline');
@@ -72,9 +71,8 @@ export async function forceOffline(): Promise<void> {
  */
 export async function forceOnline(): Promise<void> {
   if (!isClient) return;
-  
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (db) {
       await enableNetwork(db);
       console.log('Firestore forced online');
@@ -89,18 +87,12 @@ export async function forceOnline(): Promise<void> {
  */
 export async function resetFirestoreConnection(): Promise<void> {
   if (!isClient) return;
-  
   console.log('Resetting Firestore connection...');
-  
   try {
-    // Clean up all listeners
     cleanupAllListeners();
-    
-    // Force offline then online
     await forceOffline();
     await new Promise(resolve => setTimeout(resolve, 1000));
     await forceOnline();
-    
     console.log('Firestore connection reset complete');
   } catch (error) {
     console.warn('Failed to reset Firestore connection:', error);
@@ -113,33 +105,23 @@ export async function resetFirestoreConnection(): Promise<void> {
  */
 export async function restartFirestore(): Promise<void> {
   if (!isClient) return;
-  
   console.log('Restarting Firestore...');
-  
   try {
-    // Clean up all listeners first
     try {
       cleanupAllListeners();
       console.log('✅ Listeners cleaned up');
     } catch (error) {
       console.warn('⚠️ Failed to cleanup listeners:', error);
     }
-    
-    // Try to terminate Firestore
     try {
       await terminateFirestore();
       console.log('✅ Firestore terminated');
     } catch (error) {
       console.warn('⚠️ Firestore termination failed (this is often expected):', error);
-      // Don't throw here - termination failure is common and not critical
     }
-    
-    // Wait a bit for cleanup
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Re-initialize by accessing Firestore
     try {
-      const db = getFirebaseDb();
+      const db = await getFirebaseDb();
       if (db) {
         console.log('✅ Firestore restarted successfully');
       } else {
@@ -149,13 +131,9 @@ export async function restartFirestore(): Promise<void> {
       console.warn('⚠️ Failed to reinitialize Firestore:', error);
       throw new Error(`Firestore restart failed: ${error}`);
     }
-    
   } catch (error) {
     const errorMessage = `Firestore restart failed: ${error}`;
     console.warn('❌', errorMessage);
-    
-    // Don't throw the error as it causes Next.js console errors
-    // Instead, just log it as a warning
     return;
   }
 }
@@ -165,11 +143,8 @@ export async function restartFirestore(): Promise<void> {
  */
 export async function softRestartFirestore(): Promise<void> {
   if (!isClient) return;
-  
   console.log('Performing soft Firestore restart...');
-  
   try {
-    // Just reset the connection without terminating
     await resetFirestoreConnection();
     console.log('✅ Soft restart complete');
   } catch (error) {
@@ -239,4 +214,4 @@ Example usage:
   };
   
   console.log('🔥 Firestore diagnostics loaded. Type `firestoreDiag.help()` for available commands.');
-} 
+}

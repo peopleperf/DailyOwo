@@ -24,9 +24,11 @@ export function useFirestore() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const db = getFirebaseDb();
+  // Change to async getter
+  const getDb = async () => await getFirebaseDb();
 
   const getDocument = async (collectionName: string, docId: string) => {
+    const db = await getDb();
     if (!db) {
       throw new Error('Firestore not initialized');
     }
@@ -59,6 +61,7 @@ export function useFirestore() {
     orderDirection: 'asc' | 'desc' = 'desc',
     limitCount?: number
   ) => {
+    const db = await getDb();
     if (!db) {
       throw new Error('Firestore not initialized');
     }
@@ -104,6 +107,7 @@ export function useFirestore() {
   };
 
   const addDocument = async (collectionName: string, data: any) => {
+    const db = await getDb();
     if (!db) {
       throw new Error('Firestore not initialized');
     }
@@ -130,6 +134,7 @@ export function useFirestore() {
   };
 
   const updateDocument = async (collectionName: string, docId: string, data: any) => {
+    const db = await getDb();
     if (!db) {
       throw new Error('Firestore not initialized');
     }
@@ -155,6 +160,7 @@ export function useFirestore() {
   };
 
   const deleteDocument = async (collectionName: string, docId: string) => {
+    const db = await getDb();
     if (!db) {
       throw new Error('Firestore not initialized');
     }
@@ -185,4 +191,4 @@ export function useFirestore() {
     updateDocument,
     deleteDocument
   };
-} 
+}

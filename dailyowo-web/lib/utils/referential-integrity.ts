@@ -106,7 +106,7 @@ export async function validateDocumentReferences(
   documentId: string,
   documentData: Record<string, any>
 ): Promise<ValidationResult> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     return {
       isValid: false,
@@ -205,7 +205,7 @@ export async function validateCollectionIntegrity(
   collectionName: string,
   limit?: number
 ): Promise<ValidationResult> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     return {
       isValid: false,
@@ -276,7 +276,7 @@ export async function canDeleteDocument(
     rule: ReferenceRule;
   }>;
 }> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     return { canDelete: false };
   }
@@ -336,7 +336,7 @@ export async function handleCascadingDelete(
   }>;
   errors?: string[];
 }> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     return { affectedDocuments: [], errors: ['Firebase is not initialized'] };
   }
@@ -431,7 +431,7 @@ export async function fixOrphanedReferences(
   failed: number;
   errors?: string[];
 }> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     return { fixed: 0, failed: orphanedReferences.length, errors: ['Firebase is not initialized'] };
   }
@@ -495,7 +495,7 @@ export function createReferenceValidator(rules: ReferenceRule[] = REFERENCE_RULE
         return cache.get(cacheKey)!;
       }
       
-      const db = getFirebaseDb();
+      const db = await getFirebaseDb();
       if (!db) return false;
       
       try {
@@ -518,4 +518,4 @@ export function createReferenceValidator(rules: ReferenceRule[] = REFERENCE_RULE
       cache.clear();
     },
   };
-} 
+}

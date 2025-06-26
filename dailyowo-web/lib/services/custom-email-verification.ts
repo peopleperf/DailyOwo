@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, deleteDoc, serverTimestamp, Firestore } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase/config';
 import { sendEmail } from './email-service';
 
@@ -18,13 +18,32 @@ interface VerificationToken {
 export class CustomEmailVerificationService {
   private static readonly COLLECTION = 'emailVerificationTokens';
   private static readonly TOKEN_EXPIRY_HOURS = 24;
+  private static db: Firestore;
+
+  /**
+   * Initialize Firestore connection
+   */
+  private static async ensureInitialized(): Promise<Firestore> {
+    if (!this.db) {
+      try {
+        const db = await getFirebaseDb();
+        if (!db) {
+          throw new Error('Firestore not initialized');
+        }
+        this.db = db;
+      } catch (error) {
+        console.error('Firestore initialization error:', error);
+        throw new Error('Failed to initialize Firestore - check Firebase configuration and internet connection');
+      }
+    }
+    return this.db;
+  }
 
   /**
    * Generate and send verification email via Resend
    */
   static async sendVerificationEmail(userId: string, email: string, displayName?: string) {
-    const db = getFirebaseDb();
-    if (!db) throw new Error('Firestore not initialized');
+    const db = await this.ensureInitialized();
 
     // Generate secure token using Web Crypto API (browser-compatible)
     const tokenArray = new Uint8Array(32);
@@ -48,7 +67,7 @@ export class CustomEmailVerificationService {
     const verificationLink = `${process.env.NEXT_PUBLIC_APP_URL}/api/verify-email?token=${token}`;
 
     // Send email via Resend
-    await sendEmail({
+    const emailSent = await sendEmail({
       to: email,
       subject: 'Verify your DailyOwo email address',
       template: 'verification',
@@ -59,6 +78,10 @@ export class CustomEmailVerificationService {
       },
       userId
     });
+
+    if (!emailSent) {
+      throw new Error('Failed to send verification email');
+    }
 
     // Also send a welcome email after verification email
     try {
@@ -83,43 +106,74 @@ export class CustomEmailVerificationService {
    * Verify email token
    */
   static async verifyEmail(token: string): Promise<{ success: boolean; userId?: string; error?: string }> {
-    const db = getFirebaseDb();
-    if (!db) throw new Error('Firestore not initialized');
-
     try {
+      console.log('Starting email verification for token:', token);
+      const db = await this.ensureInitialized();
+
       // Get token document
       const tokenDoc = await getDoc(doc(db, this.COLLECTION, token));
       
       if (!tokenDoc.exists()) {
+        console.error('Token verification failed - document not found:', token);
         return { success: false, error: 'Invalid verification token' };
       }
 
       const tokenData = tokenDoc.data() as VerificationToken;
+      console.log('Token data retrieved:', {
+        userId: tokenData.userId,
+        email: tokenData.email,
+        expiresAt: tokenData.expiresAt,
+        used: tokenData.used
+      });
 
       // Check if token is already used
       if (tokenData.used) {
+        console.error('Token verification failed - already used:', token);
         return { success: false, error: 'This verification link has already been used' };
       }
 
       // Check if token is expired
-      if (new Date() > new Date(tokenData.expiresAt)) {
+      const now = new Date();
+      const expiresAt = new Date(tokenData.expiresAt);
+      if (now > expiresAt) {
+        console.error('Token verification failed - expired:', {
+          token,
+          now,
+          expiresAt,
+          differenceHours: (now.getTime() - expiresAt.getTime()) / (1000 * 60 * 60)
+        });
         return { success: false, error: 'This verification link has expired' };
       }
 
       // Mark token as used
       await setDoc(doc(db, this.COLLECTION, token), { ...tokenData, used: true });
+      console.log('Token marked as used:', token);
 
-      // Update user's email verification status in your user profile
-      // Note: This would need to be implemented since Firebase Auth won't know about this
-      await this.updateUserEmailVerificationStatus(tokenData.userId, true);
+      // Verify with Admin SDK
+      const { auth } = await import('../firebase/firebaseAdmin');
+      try {
+        await auth.updateUser(tokenData.userId, { emailVerified: true });
+        console.log('Admin SDK verified email for user:', tokenData.userId);
+      } catch (error) {
+        console.error('Admin SDK verification failed:', error);
+        throw new Error('Failed to verify email with Firebase Auth');
+      }
 
       // Clean up the token
       await deleteDoc(doc(db, this.COLLECTION, token));
+      console.log('Token document deleted:', token);
 
       return { success: true, userId: tokenData.userId };
     } catch (error) {
-      console.error('Error verifying email:', error);
-      return { success: false, error: 'Failed to verify email' };
+      console.error('Error verifying email:', {
+        token,
+        error: error instanceof Error ? error.stack : error,
+        timestamp: new Date().toISOString()
+      });
+      return {
+        success: false,
+        error: 'Failed to verify email - please try again or contact support'
+      };
     }
   }
 
@@ -128,8 +182,7 @@ export class CustomEmailVerificationService {
    * This would need to be integrated with your auth system
    */
   private static async updateUserEmailVerificationStatus(userId: string, verified: boolean) {
-    const db = getFirebaseDb();
-    if (!db) throw new Error('Firestore not initialized');
+    const db = await this.ensureInitialized();
 
     await setDoc(doc(db, 'users', userId), {
       emailVerified: verified,
@@ -141,7 +194,7 @@ export class CustomEmailVerificationService {
    * Clean up expired tokens (run periodically)
    */
   static async cleanupExpiredTokens() {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) return;
 
     // This would need to be implemented with a query to find expired tokens
@@ -149,4 +202,4 @@ export class CustomEmailVerificationService {
     // So this would typically be done via a Cloud Function
     console.log('Cleanup would be implemented via Cloud Function');
   }
-} 
+}

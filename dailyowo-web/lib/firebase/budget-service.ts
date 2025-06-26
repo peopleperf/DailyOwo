@@ -28,6 +28,7 @@ import {
   calculateBudgetData
 } from '@/lib/financial-logic/budget-logic';
 import { Transaction } from '@/types/transaction';
+import { budgetCategoryRepair, BudgetCategoryRepairService } from '@/lib/services/budget-category-repair';
 
 export class BudgetService {
   private db: any = null;
@@ -36,14 +37,14 @@ export class BudgetService {
     this.initializeDb();
   }
 
-  private initializeDb() {
-    if (typeof window === 'undefined') return; // Skip SSR
-    this.db = getFirebaseDb();
+  private async initializeDb() {
+    if (typeof window === 'undefined') return;
+    this.db = await getFirebaseDb();
   }
 
-  private getDb() {
+  private async getDb() {
     if (!this.db) {
-      this.initializeDb();
+      await this.initializeDb();
     }
     return this.db;
   }
@@ -51,7 +52,7 @@ export class BudgetService {
   // ============= BUDGET CRUD OPERATIONS =============
 
   async createBudget(userId: string, method: BudgetMethod, monthlyIncome: number): Promise<Budget> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const period = createBudgetPeriod('monthly');
@@ -74,7 +75,7 @@ export class BudgetService {
   }
 
   async getBudget(userId: string, budgetId: string): Promise<Budget | null> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const budgetDoc = await getDoc(doc(db, 'users', userId, 'budgets', budgetId));
@@ -87,7 +88,7 @@ export class BudgetService {
   }
 
   async getActiveBudget(userId: string): Promise<Budget | null> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const budgetsRef = collection(db, 'users', userId, 'budgets');
@@ -103,11 +104,19 @@ export class BudgetService {
       return null;
     }
 
-    return this.convertFirestoreBudget(snapshot.docs[0]);
+    let budget = this.convertFirestoreBudget(snapshot.docs[0]);
+    
+    // Check if budget needs repair (missing transaction category mappings)
+    if (BudgetCategoryRepairService.needsRepair(budget)) {
+      console.log(`Repairing budget ${budget.id} - adding missing transaction category mappings`);
+      budget = await budgetCategoryRepair.repairBudget(budget, userId);
+    }
+
+    return budget;
   }
 
   async updateBudget(userId: string, budget: Partial<Budget> & { id: string }): Promise<void> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     // Remove undefined values to prevent Firestore errors
@@ -135,7 +144,7 @@ export class BudgetService {
   }
 
   async deleteBudget(userId: string, budgetId: string): Promise<void> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     await deleteDoc(doc(db, 'users', userId, 'budgets', budgetId));
@@ -170,11 +179,9 @@ export class BudgetService {
     const budget = await this.getBudget(userId, budgetId);
     if (!budget) throw new Error('Budget not found');
 
-    const updatedCategories = [...budget.categories, category];
-
     await this.updateBudget(userId, {
       id: budgetId,
-      categories: updatedCategories
+      categories: [...budget.categories, category]
     });
   }
 
@@ -197,7 +204,7 @@ export class BudgetService {
   // ============= BUDGET DATA & ANALYTICS =============
 
   async getBudgetData(userId: string, budgetId?: string): Promise<BudgetData> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     // Get budget (active if no specific budget requested)
@@ -209,14 +216,60 @@ export class BudgetService {
       return this.getEmptyBudgetData();
     }
 
-    // Fetch transactions for the current budget period
+    // Fetch transactions - first try the budget period, then expand if needed
     const transactionsRef = collection(db, 'users', userId, 'transactions');
-    const q = query(
+    
+    console.log('[BudgetService] Initial query setup:', {
+      budgetId: budget.id,
+      startDate: budget.period.startDate,
+      endDate: budget.period.endDate,
+      frequency: budget.period.frequency,
+      startDateType: typeof budget.period.startDate,
+      endDateType: typeof budget.period.endDate
+    });
+    
+    let q = query(
       transactionsRef,
       where('date', '>=', budget.period.startDate),
       where('date', '<=', budget.period.endDate)
     );
-    const transactionsSnapshot = await getDocs(q);
+    let transactionsSnapshot = await getDocs(q);
+    
+    // If no transactions found in strict budget period and it's a monthly budget,
+    // expand to include the entire month
+    if (transactionsSnapshot.empty && budget.period.frequency === 'monthly') {
+      const budgetMonth = budget.period.startDate.getMonth();
+      const budgetYear = budget.period.startDate.getFullYear();
+      
+      // Create date range for the entire month
+      const monthStart = new Date(budgetYear, budgetMonth, 1);
+      const monthEnd = new Date(budgetYear, budgetMonth + 1, 0, 23, 59, 59, 999);
+      
+      console.log(`[BudgetService] Expanding query to full month: ${monthStart.toDateString()} to ${monthEnd.toDateString()}`);
+      
+      q = query(
+        transactionsRef,
+        where('date', '>=', Timestamp.fromDate(monthStart)),
+        where('date', '<=', Timestamp.fromDate(monthEnd))
+      );
+      transactionsSnapshot = await getDocs(q);
+      
+      // If still no transactions, get current month transactions
+      if (transactionsSnapshot.empty) {
+        const currentDate = new Date();
+        const currentMonthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const currentMonthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59, 999);
+        
+        console.log(`[BudgetService] No transactions in budget month, trying current month: ${currentMonthStart.toDateString()} to ${currentMonthEnd.toDateString()}`);
+        
+        q = query(
+          transactionsRef,
+          where('date', '>=', Timestamp.fromDate(currentMonthStart)),
+          where('date', '<=', Timestamp.fromDate(currentMonthEnd))
+        );
+        transactionsSnapshot = await getDocs(q);
+      }
+    }
     
     const transactions: Transaction[] = [];
     transactionsSnapshot.forEach((doc) => {
@@ -296,7 +349,28 @@ export class BudgetService {
       transactions.push(transaction);
     });
 
-    console.log(`Found ${transactions.length} transactions for budget calculation`);
+    console.log(`[BudgetService] Found ${transactions.length} transactions for budget calculation`);
+    console.log('[BudgetService] Budget period:', { start: budget.period.startDate, end: budget.period.endDate });
+    
+    // Log all transactions with full details for debugging
+    if (transactions.length === 0) {
+      console.log('[BudgetService] ⚠️ NO TRANSACTIONS FOUND! This explains why Total Income and Total Spent are €0.00');
+      console.log('[BudgetService] Query parameters:', {
+        userId,
+        budgetStart: budget.period.startDate,
+        budgetEnd: budget.period.endDate,
+        budgetFrequency: budget.period.frequency
+      });
+    } else {
+      console.log('[BudgetService] ✅ Transactions found - this should resolve the €0.00 issue');
+      console.log('[BudgetService] Sample transactions:', transactions.slice(0, 5).map(t => ({
+        id: t.id,
+        type: t.type,
+        amount: t.amount,
+        date: t.date,
+        description: t.description
+      })));
+    }
     
     // Log transaction breakdown for debugging
     const incomeCount = transactions.filter(t => t.type === 'income').length;
@@ -305,18 +379,43 @@ export class BudgetService {
     const liabilityCount = transactions.filter(t => t.type === 'liability').length;
     
     console.log(`Transaction breakdown: ${incomeCount} income, ${expenseCount} expenses, ${assetCount} assets, ${liabilityCount} liabilities`);
+    
+    // Log all transactions with their types and dates for debugging
+    console.log('All transactions:', transactions.map(t => ({ 
+      id: t.id, 
+      type: t.type, 
+      amount: t.amount, 
+      date: t.date, 
+      description: t.description 
+    })));
+    
+    // Calculate total income and expenses directly here to compare
+    const directTotalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    const directTotalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    console.log('Direct calculations - Income:', directTotalIncome, 'Expenses:', directTotalExpenses);
 
     // Calculate budget data with all transactions
-    return calculateBudgetData(transactions, budget);
+    const calculatedBudgetData = calculateBudgetData(transactions, budget);
+    
+    // CRITICAL: Log what we're returning from the service
+    console.log('💥 BudgetService returning data:', {
+      totalIncome: calculatedBudgetData.totalIncome,
+      totalSpent: calculatedBudgetData.totalSpent,
+      totalAllocated: calculatedBudgetData.totalAllocated,
+      cashAtHand: calculatedBudgetData.cashAtHand,
+      keys: Object.keys(calculatedBudgetData)
+    });
+    
+    return calculatedBudgetData;
   }
 
   // ============= REAL-TIME SUBSCRIPTIONS =============
 
-  subscribeToBudgets(
+  async subscribeToBudgets(
     userId: string, 
     callback: (budgets: Budget[]) => void
-  ): Unsubscribe {
-    const db = this.getDb();
+  ): Promise<Unsubscribe> {
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const budgetsRef = collection(db, 'users', userId, 'budgets');
@@ -331,11 +430,11 @@ export class BudgetService {
     });
   }
 
-  subscribeToActiveBudget(
+  async subscribeToActiveBudget(
     userId: string,
     callback: (budget: Budget | null) => void
-  ): Unsubscribe {
-    const db = this.getDb();
+  ): Promise<Unsubscribe> {
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const budgetsRef = collection(db, 'users', userId, 'budgets');
@@ -359,7 +458,7 @@ export class BudgetService {
   // ============= USER PROFILE INTEGRATION =============
 
   async getUserProfile(userId: string): Promise<any> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const userDoc = await getDoc(doc(db, 'users', userId));
@@ -422,8 +521,8 @@ export class BudgetService {
   }
 
   private async createSampleTransactions(userId: string): Promise<void> {
-    const db = this.getDb();
-    if (!db) return;
+    const db = await this.getDb();
+    if (!db) throw new Error('Database not initialized');
 
     const sampleTransactions = [
       // Income
@@ -538,4 +637,4 @@ export class BudgetService {
 }
 
 // Create singleton instance
-export const budgetService = new BudgetService(); 
+export const budgetService = new BudgetService();

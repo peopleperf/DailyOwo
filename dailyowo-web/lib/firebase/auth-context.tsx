@@ -26,6 +26,7 @@ import { userProfileService } from './user-profile-service';
 import { useRouter, usePathname } from 'next/navigation';
 import { sendEmail } from '@/lib/services/email-service';
 import { CustomEmailVerificationService } from '@/lib/services/custom-email-verification';
+import { twoFactorService } from './two-factor-service';
 
 export interface UserProfile {
   uid: string;
@@ -107,7 +108,11 @@ interface AuthContextType {
   loading: boolean;
   emailVerified: boolean;
   error: string | null;
+  // 2FA state
+  requires2FA: boolean;
+  pendingUser: User | null;
   signIn: (email: string, password: string) => Promise<void>;
+  verify2FA: (code: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
@@ -116,6 +121,7 @@ interface AuthContextType {
   updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
   changePassword: (newPassword: string) => Promise<void>;
   reauthenticate: (currentPassword: string) => Promise<void>;
+  checkVerificationStatus: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -128,6 +134,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [emailVerified, setEmailVerified] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // 2FA state
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [pendingUser, setPendingUser] = useState<User | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const unsubscribeRef = useRef<(() => void) | null>(null);
@@ -140,26 +149,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleRedirect = (user: User | null, profile: UserProfile | null) => {
+    console.log('[AuthContext] handleRedirect called', {
+      user: user?.uid,
+      profile: profile ? {
+        uid: profile.uid,
+        onboardingCompleted: profile.onboardingCompleted,
+        emailVerified: profile.emailVerified
+      } : null,
+      pathname,
+      isClient: isClientRef.current
+    });
     if (!pathname || !isClientRef.current) return;
 
     const isAuthPath = authPaths.some(path => pathname.startsWith(path));
     const isVerifyEmailPath = pathname.startsWith('/verify-email');
 
     if (user && profile) {
-      // Check if email is verified (check both Firebase and our custom field)
-      const isEmailVerified = user.emailVerified || profile.emailVerified;
+      // Debug logging for verification status
+      console.log('[AuthContext] Verification status check:', {
+        pathname,
+        isVerifyEmailPath,
+        profileEmailVerified: profile.emailVerified,
+        profile: profile ? { uid: profile.uid, email: profile.email } : null
+      });
+
+      // Check if email is verified (only check our custom field since we're using custom verification)
+      const isEmailVerified = profile.emailVerified;
       if (!isEmailVerified) {
+        console.log('[AuthContext] Email not verified - redirecting to verification');
         // User email is not verified, redirect to verification page
         if (!isVerifyEmailPath) {
           router.push('/verify-email');
         }
         return;
+      } else {
+        console.log('[AuthContext] Email verified - proceeding');
       }
 
       // User is logged in and email is verified
       if (profile.onboardingCompleted) {
         // Onboarding is complete, if they are on an auth page, send them to the dashboard
-        if (isAuthPath || isVerifyEmailPath) {
+        if (isAuthPath || isVerifyEmailPath || pathname.startsWith('/onboarding')) {
           router.push('/dashboard');
         }
       } else {
@@ -183,9 +213,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch user profile from Firestore
   const fetchUserProfile = async (uid: string) => {
+    if (!uid) {
+      console.log('fetchUserProfile skipped: no uid provided.');
+      return null;
+    }
     if (!isClientRef.current) return null;
-    
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) {
       console.warn('Firestore not available for profile fetch');
       return null;
@@ -208,8 +241,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Create user profile in Firestore
   const createUserProfile = async (user: User, additionalData?: Partial<UserProfile>) => {
     if (!isClientRef.current) return;
-    
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) {
       console.warn('Firestore not available for profile creation');
       // Still set local state so user can proceed
@@ -271,21 +303,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Update user profile
   const updateUserProfile = async (data: Partial<UserProfile>) => {
     if (!user || !isClientRef.current) return;
-    
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) {
       console.warn('Firestore not available for profile update');
       return;
     }
-    
     try {
       const docRef = doc(db, 'users', user.uid);
       await updateDoc(docRef, {
         ...data,
         updatedAt: serverTimestamp()
       });
-      
-      // Update local state
       setUserProfile(prev => prev ? { ...prev, ...data } : null);
     } catch (error) {
       console.error('Error updating user profile:', error);
@@ -294,51 +322,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Process auth state change
-  const processAuthStateChange = async (user: User | null) => {
+  const processAuthStateChange = async (user: User | null, forceProfileRefresh = false) => {
     if (authStateProcessingRef.current || !isClientRef.current) return;
     authStateProcessingRef.current = true;
 
     try {
-      // Wait for Firebase to be initialized
-      const { db } = initializeFirebaseIfNeeded();
+      console.log('[AuthContext] Processing auth state change for user:', user?.uid || 'null');
       
-      // If Firestore is not available yet, wait a bit and retry
-      if (!db) {
-        console.log('Waiting for Firestore initialization...');
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const { db: retryDb } = initializeFirebaseIfNeeded();
-        if (!retryDb) {
-          console.warn('Firestore still not available after retry');
-        }
+      // Firebase services are assumed to be initialized and ready here because useEffect awaits initializeFirebaseIfNeeded
+      // Fetch user profile - force refresh if requested
+      let profile = await fetchUserProfile(user?.uid || '');
+      console.log('[AuthContext] Fetched profile:', profile ? {
+        uid: profile.uid,
+        email: profile.email,
+        emailVerified: profile.emailVerified,
+        emailVerifiedAt: profile.emailVerifiedAt
+      } : null);
+
+      // If we're forcing a refresh and have a user, re-fetch the profile
+      if (forceProfileRefresh && user?.uid) {
+        console.log('[AuthContext] Forcing profile refresh for user:', user.uid);
+        profile = await fetchUserProfile(user.uid);
+        console.log('[AuthContext] Refreshed profile:', profile ? {
+          uid: profile.uid,
+          email: profile.email,
+          emailVerified: profile.emailVerified,
+          emailVerifiedAt: profile.emailVerifiedAt
+        } : null);
       }
 
       if (user) {
         setUser(user);
         setEmailVerified(user.emailVerified);
-        
-        // Fetch user profile
-        let profile = await fetchUserProfile(user.uid);
+
         if (!profile) {
           // Create profile if it doesn't exist
           // For Google/social auth, email is already verified
           const additionalData: Partial<UserProfile> = {};
           if (user.providerData.some(provider => provider.providerId === 'google.com')) {
+            console.log('[AuthContext] Google user detected - setting verified status');
             additionalData.emailVerified = true;
             additionalData.emailVerifiedAt = serverTimestamp();
+            // Set onboardingCompleted to false to trigger onboarding redirect
+            additionalData.onboardingCompleted = false;
           }
+          console.log('[AuthContext] Creating user profile for new user');
           await createUserProfile(user, additionalData);
           profile = await fetchUserProfile(user.uid);
+          console.log('[AuthContext] Profile created/fetched - calling handleRedirect');
+          handleRedirect(user, profile);
         } else {
           setUserProfile(profile);
         }
-        
+
         // Handle redirect after profile is loaded
         handleRedirect(user, profile);
 
         // Create user profile in the new service if it doesn't exist (with error handling)
         try {
-          const db = getFirebaseDb();
-          if (db) {
+          const db = await getFirebaseDb(); // Await getter to ensure we have the latest instance
+          if (db && user.uid) { // Ensure user.uid is available
             let userProfileData = await userProfileService.getUserProfile(user.uid);
             if (!userProfileData && user.email && user.displayName) {
               await userProfileService.createUserProfile(user.uid, user.email, user.displayName);
@@ -350,8 +393,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Create session for new login (with error handling)
         try {
-          const db = getFirebaseDb();
-          if (db) {
+          const db = await getFirebaseDb(); // Await getter
+          if (db && user.uid) { // Ensure user.uid is available
             const existingSessions = await sessionService.getActiveSessions(user.uid);
             if (existingSessions.length === 0) {
               await sessionService.createSession(user.uid, {});
@@ -361,46 +404,75 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
           console.warn('Failed to create session:', error);
         }
+
       } else {
+        // User is null (logged out)
         setUser(null);
         setUserProfile(null);
         setEmailVerified(false);
         handleRedirect(null, null);
       }
+    } catch (error) {
+      console.error('Error processing auth state change:', error);
+      setError('An error occurred during authentication state processing.');
+      // Consider keeping user state if it was previously set? Depends on desired behavior on error.
+      // For now, reset state on processing error.
+      setUser(null);
+      setUserProfile(null);
+      setEmailVerified(false);
+      handleRedirect(null, null);
     } finally {
       authStateProcessingRef.current = false;
       setLoading(false);
     }
   };
 
-  // Initialize auth state listener
+  // Initialize Firebase and set up auth state listener
   useEffect(() => {
     if (!isClientRef.current) return;
-    
-    console.log('Setting up auth state listener');
-    
-    // Initialize Firebase immediately
-    initializeFirebaseIfNeeded();
-    
-    const auth = getFirebaseAuth();
-    if (!auth) {
-      console.error('Auth not initialized');
-      setLoading(false);
-      return;
-    }
 
-    // Set up auth state listener
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log('Auth state changed:', user?.uid || 'null');
-      processAuthStateChange(user);
-    });
+    setLoading(true); // Ensure loading is true while initializing
+    console.log('Starting Firebase initialization and auth state listener setup');
 
-    unsubscribeRef.current = unsubscribe;
+    let unsubscribe: (() => void) | null = null;
 
-    // Check for redirect result (for mobile Google auth)
-    getRedirectResult(auth).catch((error) => {
-      console.error('Redirect result error:', error);
-    });
+    const setupAuthListener = async () => {
+      try {
+        // Ensure Firebase services are initialized and ready by awaiting
+        const { auth } = await initializeFirebaseIfNeeded(); // initializeFirebaseIfNeeded now awaits internally
+        const db = await getFirebaseDb(); // Explicitly await getFirebaseDb
+
+        if (!auth || !db) {
+          console.error('Firebase Auth or Firestore not available after initialization attempt.');
+          setError('Firebase services failed to initialize.');
+          setLoading(false);
+          return;
+        }
+
+        console.log('Firebase initialized, setting up auth state listener');
+
+        // Set up auth state listener ONLY after Firebase is confirmed initialized
+        unsubscribe = onAuthStateChanged(auth, (user) => {
+          console.log('Auth state changed:', user?.uid || 'null');
+          processAuthStateChange(user); // Process the initial state and subsequent changes
+        });
+
+        unsubscribeRef.current = unsubscribe;
+
+        // Check for redirect result (for mobile Google auth)
+        getRedirectResult(auth).catch((error) => {
+          console.error('Redirect result error:', error);
+          // Handle redirect errors if necessary
+        });
+
+      } catch (error) {
+        console.error('Error during Firebase initialization or auth listener setup:', error);
+        setError('Failed to initialize core application services.');
+        setLoading(false);
+      }
+    };
+
+    setupAuthListener();
 
     // Cleanup
     return () => {
@@ -408,8 +480,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
       }
+      // Consider terminating Firestore on unmount if necessary for complex scenarios
+      // terminateFirestore().catch(e => console.warn('Firestore termination failed:', e));
     };
-  }, []); // Empty dependency array - only run once
+  }, []); // Empty dependency array - run only once
 
   // Sign in with email and password
   const signIn = async (email: string, password: string) => {
@@ -425,6 +499,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     while (retryCount < maxRetries) {
       try {
         const result = await signInWithEmailAndPassword(auth, email, password);
+        
+        // Check if user has 2FA enabled
+        const has2FA = await twoFactorService.is2FAEnabled(result.user.uid);
+        
+        if (has2FA) {
+          // Sign out the user temporarily and require 2FA verification
+          await signOut(auth);
+          setPendingUser(result.user);
+          setRequires2FA(true);
+          console.log('2FA required for user:', result.user.uid);
+          return;
+        }
+        
+        // No 2FA required, proceed with normal login
         const profile = await fetchUserProfile(result.user.uid);
         if (!profile) {
           await createUserProfile(result.user);
@@ -463,6 +551,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userError.name = error.name;
         throw userError;
       }
+    }
+  };
+
+  // Verify 2FA code and complete login
+  const verify2FA = async (code: string) => {
+    if (!pendingUser) {
+      throw new Error('No pending user for 2FA verification');
+    }
+
+    setError(null);
+    try {
+      // Verify the 2FA code
+      const isValid = await twoFactorService.verify2FACode(pendingUser.uid, code);
+      
+      if (!isValid) {
+        throw new Error('Invalid verification code');
+      }
+
+      // Set the user as authenticated
+      setUser(pendingUser);
+      
+      // Fetch user profile
+      const profile = await fetchUserProfile(pendingUser.uid);
+      if (!profile) {
+        await createUserProfile(pendingUser);
+      } else {
+        setUserProfile(profile);
+      }
+
+      // Create session for login
+      try {
+        await sessionService.createSession(pendingUser.uid, {});
+        console.log('Session created for 2FA login');
+      } catch (error) {
+        console.warn('Failed to create session on 2FA login:', error);
+      }
+
+      // Clear 2FA state
+      setRequires2FA(false);
+      setPendingUser(null);
+
+      console.log('2FA verification successful');
+      
+    } catch (error: any) {
+      console.error('2FA verification failed:', error);
+      const errorMessage = error.message || 'Verification failed. Please try again.';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -647,7 +783,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Send password reset email notification
       try {
         // Get user profile by email to get displayName
-        const db = getFirebaseDb();
+        const db = await getFirebaseDb();
         let userName = email.split('@')[0];
         if (db) {
           const usersRef = collection(db, 'users');
@@ -779,13 +915,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Manually check verification status (call this after email verification completes)
+  const checkVerificationStatus = async () => {
+    if (!user?.uid) return false;
+    console.log('[AuthContext] Manually checking verification status');
+    const profile = await fetchUserProfile(user.uid);
+    if (profile?.emailVerified) {
+      setEmailVerified(true);
+      handleRedirect(user, profile);
+      return true;
+    }
+    return false;
+  };
+
   const value = {
     user,
     userProfile,
     loading,
     emailVerified,
     error,
+    // 2FA state
+    requires2FA,
+    pendingUser,
     signIn,
+    verify2FA,
     signUp,
     signInWithGoogle,
     logout,
@@ -793,7 +946,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     sendVerificationEmail,
     updateUserProfile,
     changePassword,
-    reauthenticate
+    reauthenticate,
+    checkVerificationStatus
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -819,4 +973,4 @@ export function useRequireAuth() {
   }, [user, loading, router]);
 
   return { user, loading };
-} 
+}

@@ -1,49 +1,63 @@
-import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
-// Analytics import removed - not installed
 import { AuthProvider } from '@/lib/firebase/auth-context';
+import { BottomNavigation } from '@/components/layouts/BottomNavigation';
+import { GlobalSyncStatus } from '@/components/ui/SyncStatusIndicator';
+import { FirestoreErrorHandler } from '@/components/ui/FirestoreErrorHandler';
+import ClientLayout from '@/app/client-layout';
+import { AuthWrapper } from '@/components/features/AuthWrapper';
 import './globals.css';
-import { ErrorBoundary, AsyncErrorBoundary } from '@/lib/utils/error-boundary';
 
-const inter = Inter({ subsets: ['latin'] });
+interface Props {
+  children: React.ReactNode;
+}
 
-export const metadata: Metadata = {
-  title: 'DailyOwo - Your Premium Financial Companion',
-  description: 'Track income, expenses, and investments with AI-powered insights. Manage your finances with style.',
-  manifest: '/manifest.json',
+export const metadata = {
+  title: 'DailyOwo - Smart Finance',
+  description: 'Smart financial management for the modern world',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'DailyOwo'
+  },
+  formatDetection: {
+    telephone: false
+  }
 };
 
-export const viewport: Viewport = {
+export const viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#262659',
+  viewportFit: 'cover',
+  themeColor: '#A67C00'
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: Props) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
-        <link rel="icon" href="/icons/icon-192x192.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.svg" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        <meta name="theme-color" content="#A67C00" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="DailyOwo" />
+        <meta name="format-detection" content="telephone=no" />
       </head>
-      <body className={inter.className}>
-        <ErrorBoundary>
-          <AsyncErrorBoundary>
-            <AuthProvider>
+      <body>
+        {/* Global sync status bar */}
+        <GlobalSyncStatus />
+        
+        {/* Firestore error handler */}
+        <FirestoreErrorHandler />
+        
+        <AuthProvider>
+          <AuthWrapper>
+            <ClientLayout>
               {children}
-            </AuthProvider>
-          </AsyncErrorBoundary>
-        </ErrorBoundary>
-
+              <BottomNavigation />
+            </ClientLayout>
+          </AuthWrapper>
+        </AuthProvider>
       </body>
     </html>
   );

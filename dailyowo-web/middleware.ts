@@ -1,14 +1,14 @@
-import createMiddleware from 'next-intl/middleware';
-import {routing} from './i18n/routing';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export default createMiddleware(routing);
+// This function can be named `middleware` or exported as default
+export function middleware(request: NextRequest) {
+  // Example: Redirect or modify requests as needed
+  // For now, just pass through all requests
+  return NextResponse.next();
+}
 
+// Define which paths the middleware should apply to
 export const config = {
-  // Match only internationalized pathnames
-  matcher: [
-    // Skip all internal paths (_next, _vercel, etc.)
-    '/((?!_next|_vercel|.*\\..*).*)',
-    // Optional: only run on root (/) or locale-prefixed paths
-    // '/', '/(en|es|fr|it|pt|de|nl|yo|sw|ar)/:path*'
-  ]
-}; 
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+};

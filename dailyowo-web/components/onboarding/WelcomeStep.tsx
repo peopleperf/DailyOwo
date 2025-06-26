@@ -1,7 +1,6 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useTranslations } from 'next-intl';
 import { GlassContainer } from '@/components/ui/GlassContainer';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { Icon } from '@/components/ui/Icon';
@@ -12,9 +11,6 @@ interface WelcomeStepProps {
 }
 
 export function WelcomeStep({ onNext }: WelcomeStepProps) {
-  const t = useTranslations('onboarding.welcome');
-  const tCommon = useTranslations('common');
-  
   const handleContinue = () => {
     onNext({});
   };
@@ -44,11 +40,11 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
           className="mb-16"
         >
           <h1 className="text-4xl md:text-5xl font-bold text-primary mb-6">
-            {t('title')}
+            Welcome to DailyOwo
           </h1>
           
           <p className="text-xl text-primary/70 max-w-lg mx-auto leading-relaxed">
-            {t('subtitle')}
+            The all-in-one app to manage your finances, powered by AI.
           </p>
         </motion.div>
 
@@ -62,21 +58,21 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
           <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
             <div className="flex items-center gap-2">
               <Icon name="ai" size="sm" className="text-gold/70" />
-              <p className="text-sm text-primary/60">{t('features.ai.description')}</p>
+              <p className="text-sm text-primary/60">AI-Powered Insights</p>
             </div>
 
             <div className="hidden md:block w-px h-8 bg-gray-200/50" />
 
             <div className="flex items-center gap-2">
               <Icon name="shield" size="sm" className="text-gold/70" />
-              <p className="text-sm text-primary/60">{t('features.secure.description')}</p>
+              <p className="text-sm text-primary/60">Bank-Level Security</p>
             </div>
 
             <div className="hidden md:block w-px h-8 bg-gray-200/50" />
 
             <div className="flex items-center gap-2">
               <Icon name="users" size="sm" className="text-gold/70" />
-              <p className="text-sm text-primary/60">{t('features.family.description')}</p>
+              <p className="text-sm text-primary/60">Family Sharing</p>
             </div>
           </div>
         </motion.div>
@@ -95,12 +91,12 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
             onClick={handleContinue}
             className="min-w-[280px] py-4 text-lg"
           >
-            {t('getStarted')}
+            Get Started
             <Icon name="arrowRight" size="md" className="ml-3" />
           </GlassButton>
 
           <p className="text-sm text-primary/50">
-            {t('setupTime')}
+            Takes less than 2 minutes
           </p>
         </motion.div>
       </motion.div>

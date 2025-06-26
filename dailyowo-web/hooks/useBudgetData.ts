@@ -27,53 +27,97 @@ export function useBudgetData(): {
     }
 
     let unsubscribe: (() => void) | null = null;
+    let isMounted = true; // Track if component is still mounted
 
     const initializeBudget = async () => {
       try {
+        if (!isMounted) return; // Prevent state updates if unmounted
+        
         setIsLoading(true);
         setError(null);
 
         // Check if user has an active budget
         const activeBudget = await budgetService.getActiveBudget(user.uid);
         
+        if (!isMounted) return; // Check again after async operation
+        
         if (!activeBudget && !hasInitialized) {
           // Create a sample budget for new users
           console.log('Creating sample budget for new user...');
           await budgetService.setupSampleBudget(user.uid);
-          setHasInitialized(true);
+          if (isMounted) {
+            setHasInitialized(true);
+          }
         }
 
+        if (!isMounted) return; // Final check before subscription
+
         // Subscribe to budget changes
-        unsubscribe = budgetService.subscribeToActiveBudget(user.uid, async (budget) => {
+        const subscription = await budgetService.subscribeToActiveBudget(user.uid, async (budget) => {
+          if (!isMounted) return; // Prevent updates if unmounted
+          
+          console.log('🔔 Budget subscription triggered with budget:', budget?.id);
+          
           if (budget) {
             try {
+              console.log('🔄 Calling getBudgetData...');
               const data = await budgetService.getBudgetData(user.uid, budget.id);
-              setBudgetData(data);
+              console.log('📊 useBudgetData hook received data from service:', {
+                totalIncome: data?.totalIncome,
+                totalSpent: data?.totalSpent,
+                totalAllocated: data?.totalAllocated,
+                cashAtHand: data?.cashAtHand
+              });
+              if (isMounted) {
+                console.log('✅ Setting budget data to state');
+                setBudgetData(data);
+              }
             } catch (err) {
               console.error('Error loading budget data:', err);
-              setError('Failed to load budget data');
+              if (isMounted) {
+                setError('Failed to load budget data');
+              }
             }
           } else {
-            setBudgetData(null);
+            console.log('❌ No budget found, setting null');
+            if (isMounted) {
+              setBudgetData(null);
+            }
           }
-          setIsLoading(false);
+          if (isMounted) {
+            setIsLoading(false);
+          }
         });
+        
+        if (isMounted) {
+          unsubscribe = subscription;
+        } else {
+          // If component unmounted during setup, clean up immediately
+          subscription();
+        }
 
       } catch (err) {
         console.error('Error initializing budget:', err);
-        setError('Failed to initialize budget');
-        setIsLoading(false);
+        if (isMounted) {
+          setError('Failed to initialize budget');
+          setIsLoading(false);
+        }
       }
     };
 
     initializeBudget();
 
     return () => {
+      isMounted = false; // Mark component as unmounted
       if (unsubscribe) {
-        unsubscribe();
+        try {
+          unsubscribe();
+        } catch (error) {
+          console.warn('Error cleaning up budget subscription:', error);
+        }
       }
     };
   }, [user, hasInitialized]);
 
   return { budgetData, isLoading, error };
-} 
+}

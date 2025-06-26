@@ -6,7 +6,7 @@ import { Target, Home, Car, TrendingUp, Heart, Briefcase, MoreVertical, Edit2, T
 import { GlassContainer } from '@/components/ui/GlassContainer';
 import { formatCurrency } from '@/lib/utils/format';
 import { useAuth } from '@/lib/firebase/auth-context';
-import { useLocale } from 'next-intl';
+
 
 interface Goal {
   id: string;

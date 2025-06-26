@@ -13,7 +13,7 @@ import { getFirebaseDb } from './config';
  * Ensures Firestore is online and connected
  */
 export async function ensureFirestoreConnection() {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     throw new Error('Firestore not initialized');
   }
@@ -38,7 +38,7 @@ export async function ensureFirestoreConnection() {
  * Creates initial user document when a user registers
  */
 export async function createUserDocument(userId: string, userData: any) {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     throw new Error('Firestore not initialized');
   }
@@ -66,7 +66,7 @@ export async function createUserDocument(userId: string, userData: any) {
  * Initialize collections with proper structure
  */
 export async function initializeCollections(userId: string) {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     console.warn('Firestore not initialized, skipping collection initialization');
     return false;
@@ -87,7 +87,7 @@ export async function initializeCollections(userId: string) {
  * Force sync any pending writes
  */
 export async function syncPendingWrites() {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) return;
   
   try {
@@ -96,4 +96,4 @@ export async function syncPendingWrites() {
   } catch (error) {
     console.error('Error syncing writes:', error);
   }
-} 
+}

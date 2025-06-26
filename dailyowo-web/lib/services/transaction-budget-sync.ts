@@ -43,8 +43,8 @@ export class TransactionBudgetSyncService {
     this.budgetService = new BudgetService();
   }
 
-  private getDb() {
-    const db = getFirebaseDb();
+  private async getDb() {
+    const db = await getFirebaseDb();
     if (!db) {
       throw new Error('Database not initialized. Please check your Firebase configuration.');
     }
@@ -145,7 +145,7 @@ export class TransactionBudgetSyncService {
     transaction: Transaction,
     eventType: 'create' | 'update' | 'delete'
   ): Promise<TransactionBudgetSync | null> {
-    const db = this.getDb();
+    const db = await this.getDb();
     const userId = transaction.userId;
 
     // Get active budget
@@ -345,8 +345,8 @@ export class TransactionBudgetSyncService {
   /**
    * Set up real-time listeners for transaction changes
    */
-  setupTransactionListener(userId: string, callback: (sync: TransactionBudgetSync | null) => void): () => void {
-    const db = this.getDb();
+  async setupTransactionListener(userId: string, callback: (sync: TransactionBudgetSync | null) => void): Promise<() => void> {
+    const db = await this.getDb();
     const transactionsRef = collection(db, 'users', userId, 'transactions');
     
     const unsubscribe = onSnapshot(transactionsRef, async (snapshot) => {
@@ -403,7 +403,7 @@ export class TransactionBudgetSyncService {
     userId: string,
     period: { startDate: Date; endDate: Date }
   ): Promise<Transaction[]> {
-    const db = this.getDb();
+    const db = await this.getDb();
     const transactionsRef = collection(db, 'users', userId, 'transactions');
     
     const q = query(
@@ -450,4 +450,4 @@ export class TransactionBudgetSyncService {
 }
 
 // Export singleton instance
-export const transactionBudgetSync = new TransactionBudgetSyncService(); 
+export const transactionBudgetSync = new TransactionBudgetSyncService();

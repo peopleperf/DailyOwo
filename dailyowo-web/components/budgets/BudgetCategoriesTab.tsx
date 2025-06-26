@@ -27,6 +27,8 @@ export function BudgetCategoriesTab({ budgetData, currency, onUpdate }: BudgetCa
   const [selectedCategory, setSelectedCategory] = useState<BudgetCategory | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
+  const [showBulkActions, setShowBulkActions] = useState(false);
   
   // Rebalancing states
   const [showRebalanceModal, setShowRebalanceModal] = useState(false);
@@ -144,6 +146,9 @@ export function BudgetCategoriesTab({ budgetData, currency, onUpdate }: BudgetCa
           transactionCategories: categoryData.transactionCategories || [],
         };
         
+        // Store original state for rollback
+        const originalBudgetData = { ...localBudgetData };
+        
         // Optimistic update - add category immediately
         setLocalBudgetData({
           ...localBudgetData,
@@ -153,11 +158,18 @@ export function BudgetCategoriesTab({ budgetData, currency, onUpdate }: BudgetCa
           }
         });
 
-        // Update Firebase in background
-        await budgetService.addBudgetCategory(user.uid, currentBudget.id, newCategory);
-        toastSuccess('Category added successfully');
-        handleModalClose();
-        onUpdate();
+        try {
+          // Update Firebase in background
+          await budgetService.addBudgetCategory(user.uid, currentBudget.id, newCategory);
+          toastSuccess('Category added successfully');
+          handleModalClose();
+          onUpdate();
+        } catch (error) {
+          console.error('Error adding category:', error);
+          // Rollback optimistic update
+          setLocalBudgetData(originalBudgetData);
+          toastError('Failed to add category', 'Please try again.');
+        }
       } else if (modalMode === 'edit' && selectedCategory) {
         // Check if this edit requires rebalancing
         const amountChanged = categoryData.allocated !== undefined && 
@@ -180,6 +192,9 @@ export function BudgetCategoriesTab({ budgetData, currency, onUpdate }: BudgetCa
             return acc;
           }, {} as Partial<BudgetCategory>);
           
+          // Store original state for rollback
+          const originalBudgetData = { ...localBudgetData };
+          
           // Optimistic update - update category immediately
           const updatedCategories = currentBudget.categories.map(cat => 
             cat.id === selectedCategory.id 
@@ -201,16 +216,23 @@ export function BudgetCategoriesTab({ budgetData, currency, onUpdate }: BudgetCa
             }
           });
 
-          // Update Firebase in background
-          await budgetService.updateBudgetCategory(
-            user.uid, 
-            currentBudget.id, 
-            selectedCategory.id, 
-            updates
-          );
-          toastSuccess('Category updated successfully');
-          handleModalClose();
-          onUpdate();
+          try {
+            // Update Firebase in background
+            await budgetService.updateBudgetCategory(
+              user.uid, 
+              currentBudget.id, 
+              selectedCategory.id, 
+              updates
+            );
+            toastSuccess('Category updated successfully');
+            handleModalClose();
+            onUpdate();
+          } catch (error) {
+            console.error('Error updating category:', error);
+            // Rollback optimistic update
+            setLocalBudgetData(originalBudgetData);
+            toastError('Failed to update category', 'Please try again.');
+          }
         }
       }
     } catch (error) {
@@ -243,15 +265,26 @@ export function BudgetCategoriesTab({ budgetData, currency, onUpdate }: BudgetCa
           categories: updatedCategories
         };
 
+        // Store original state for rollback
+        const originalBudgetData = { ...localBudgetData };
+        
         // Optimistic update
         setLocalBudgetData({
           ...localBudgetData,
           currentBudget: updatedBudget
         });
 
-        // Update Firebase in background
-        await budgetService.updateBudget(user.uid, updatedBudget);
-        toastSuccess('Switched to custom budget and updated category');
+        try {
+          // Update Firebase in background
+          await budgetService.updateBudget(user.uid, updatedBudget);
+          toastSuccess('Switched to custom budget and updated category');
+        } catch (error) {
+          console.error('Error updating budget:', error);
+          // Rollback optimistic update
+          setLocalBudgetData(originalBudgetData);
+          toastError('Failed to update budget', 'Please try again.');
+          throw error; // Re-throw to exit the try block
+        }
       } else {
         // Apply rebalancing
         const rebalancedCategories = applyBudgetRebalance(
@@ -275,6 +308,9 @@ export function BudgetCategoriesTab({ budgetData, currency, onUpdate }: BudgetCa
           categories: rebalancedCategories
         };
 
+        // Store original state for rollback
+        const originalBudgetData = { ...localBudgetData };
+        
         // Optimistic update - update all affected categories immediately
         setLocalBudgetData({
           ...localBudgetData,
@@ -289,13 +325,21 @@ export function BudgetCategoriesTab({ budgetData, currency, onUpdate }: BudgetCa
             .reduce((sum, cat) => sum + cat.allocated, 0),
         });
 
-        // Update Firebase in background
-        await budgetService.updateBudget(user.uid, {
-          id: currentBudget.id,
-          categories: rebalancedCategories
-        });
-        
-        toastSuccess('Budget rebalanced successfully');
+        try {
+          // Update Firebase in background
+          await budgetService.updateBudget(user.uid, {
+            id: currentBudget.id,
+            categories: rebalancedCategories
+          });
+          
+          toastSuccess('Budget rebalanced successfully');
+        } catch (error) {
+          console.error('Error rebalancing budget:', error);
+          // Rollback optimistic update
+          setLocalBudgetData(originalBudgetData);
+          toastError('Failed to rebalance budget', 'Please try again.');
+          throw error; // Re-throw to exit the try block
+        }
       }
       
       setShowRebalanceModal(false);
@@ -310,6 +354,73 @@ export function BudgetCategoriesTab({ budgetData, currency, onUpdate }: BudgetCa
       // Revert optimistic update on error
       setLocalBudgetData(budgetData);
     }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!user || selectedCategories.size === 0) return;
+    
+    const categoryNames = Array.from(selectedCategories)
+      .map(id => currentBudget.categories.find(c => c.id === id)?.name)
+      .filter(Boolean)
+      .join(', ');
+    
+    if (!confirm(`Are you sure you want to delete ${selectedCategories.size} categories: ${categoryNames}?`)) {
+      return;
+    }
+
+    const originalBudgetData = { ...localBudgetData };
+    
+    try {
+      // Optimistic update - remove categories immediately
+      const updatedCategories = currentBudget.categories.filter(cat => 
+        !selectedCategories.has(cat.id)
+      );
+      
+      setLocalBudgetData({
+        ...localBudgetData,
+        currentBudget: {
+          ...currentBudget,
+          categories: updatedCategories
+        }
+      });
+
+      // Delete categories from Firebase
+      for (const categoryId of selectedCategories) {
+        await budgetService.removeBudgetCategory(user.uid, currentBudget.id, categoryId);
+      }
+      
+      toastSuccess(`Deleted ${selectedCategories.size} categories successfully`);
+      setSelectedCategories(new Set());
+      setShowBulkActions(false);
+      onUpdate();
+    } catch (error) {
+      console.error('Error deleting categories:', error);
+      // Rollback optimistic update
+      setLocalBudgetData(originalBudgetData);
+      toastError('Failed to delete categories', 'Please try again.');
+    }
+  };
+
+  const handleToggleCategory = (categoryId: string) => {
+    const newSelected = new Set(selectedCategories);
+    if (newSelected.has(categoryId)) {
+      newSelected.delete(categoryId);
+    } else {
+      newSelected.add(categoryId);
+    }
+    setSelectedCategories(newSelected);
+    setShowBulkActions(newSelected.size > 0);
+  };
+
+  const handleSelectAll = () => {
+    const allIds = new Set(currentBudget.categories.map(c => c.id));
+    setSelectedCategories(allIds);
+    setShowBulkActions(true);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedCategories(new Set());
+    setShowBulkActions(false);
   };
 
   const groupedCategories = currentBudget.categories.reduce((acc, category) => {
@@ -335,17 +446,64 @@ export function BudgetCategoriesTab({ budgetData, currency, onUpdate }: BudgetCa
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-light text-primary">Budget Categories</h3>
-          <p className="text-sm text-primary/60">Manage your spending categories</p>
+          <p className="text-sm text-primary/60">
+            Manage your spending categories
+            {selectedCategories.size > 0 && (
+              <span className="ml-2 text-gold">• {selectedCategories.size} selected</span>
+            )}
+          </p>
         </div>
-        <GlassButton
-          onClick={handleAddCategory}
-          size="sm"
-          goldBorder
-          className="flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Category
-        </GlassButton>
+        <div className="flex items-center gap-2">
+          {!showBulkActions && currentBudget.categories.length > 1 && (
+            <GlassButton
+              onClick={() => setShowBulkActions(true)}
+              size="sm"
+              variant="secondary"
+              className="text-xs"
+            >
+              Select Multiple
+            </GlassButton>
+          )}
+          {showBulkActions && (
+            <>
+              <GlassButton
+                onClick={handleSelectAll}
+                size="sm"
+                variant="secondary"
+                className="text-xs"
+              >
+                Select All ({currentBudget.categories.length})
+              </GlassButton>
+              <GlassButton
+                onClick={handleClearSelection}
+                size="sm"
+                variant="secondary"
+                className="text-xs"
+              >
+                Clear
+              </GlassButton>
+              <GlassButton
+                onClick={handleBulkDelete}
+                size="sm"
+                variant="secondary"
+                className="text-xs text-red-600 border-red-200 hover:bg-red-50"
+                disabled={selectedCategories.size === 0}
+              >
+                <Trash2 className="w-3 h-3 mr-1" />
+                Delete ({selectedCategories.size})
+              </GlassButton>
+            </>
+          )}
+          <GlassButton
+            onClick={handleAddCategory}
+            size="sm"
+            goldBorder
+            className="flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Category
+          </GlassButton>
+        </div>
       </div>
 
       {/* Method-based budget notice */}
@@ -396,6 +554,9 @@ export function BudgetCategoriesTab({ budgetData, currency, onUpdate }: BudgetCa
                     currency={currency}
                     onEdit={() => handleEditCategory(category)}
                     onDelete={() => handleDeleteCategory(category.id)}
+                    isSelected={selectedCategories.has(category.id)}
+                    onToggleSelect={() => handleToggleCategory(category.id)}
+                    showCheckbox={showBulkActions || selectedCategories.has(category.id)}
                   />
                 ))}
               </div>

@@ -12,13 +12,15 @@ import {
   serverTimestamp,
   Timestamp,
   onSnapshot,
-  Unsubscribe
+  Unsubscribe,
+  DocumentSnapshot,
+  startAfter,
+  limit
 } from 'firebase/firestore';
 import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase/config';
 import { Transaction, CreateTransactionData, UpdateTransactionData } from '@/types/transaction';
-// TODO: Implement these services
-// import { updateBudgetSpending } from './budget-service';
-// import { checkGoalProgress } from './goal-service';
+import { budgetTransactionIntegration } from '@/lib/services/budget-transaction-integration';
+import { duplicateDetectionService } from '@/lib/services/duplicate-detection-service';
 
 // Import new utilities
 import { 
@@ -30,6 +32,7 @@ import {
 } from '@/lib/services/secure-transaction-service';
 import { validateTransaction, ValidationLevel } from '@/lib/utils/input-validation';
 import { createAuditEntry } from '@/lib/utils/transaction-audit';
+import { storeAuditEntry } from '@/lib/services/audit-storage-service';
 import { updateWithLock, LockableDocument, createTransactionMerger } from '@/lib/utils/optimistic-locking';
 import { validateDocumentReferences } from '@/lib/utils/referential-integrity';
 import { validateDocument, createSchemaValidationMiddleware } from '@/lib/utils/schema-validation';
@@ -51,7 +54,7 @@ const transactionMerger = ((current: TransactionWithLocking, incoming: Transacti
 
 export async function createTransaction(data: CreateTransactionData): Promise<string | null> {
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     const auth = getFirebaseAuth();
     const user = auth?.currentUser;
     
@@ -86,6 +89,26 @@ export async function createTransaction(data: CreateTransactionData): Promise<st
     const refValidation = await validateDocumentReferences('transactions', 'new', validatedData);
     if (!refValidation.isValid) {
       throw new Error(`Reference validation failed: ${refValidation.errors[0]?.message}`);
+    }
+
+    // Check for duplicates
+    const duplicateCheck = await duplicateDetectionService.detectDuplicates({
+      ...data,
+      userId: user.uid,
+      createdBy: user.uid,
+      date: data.date instanceof Date ? data.date : new Date(data.date),
+      currency: data.currency || 'USD',
+      categoryType: data.categoryType || 'global',
+      isRecurring: data.isRecurring || false,
+    });
+
+    if (duplicateCheck.suggestion === 'block') {
+      throw new Error(`Duplicate transaction detected with ${duplicateCheck.confidence}% confidence: ${duplicateCheck.reasons.join(', ')}`);
+    }
+
+    // Log warning for potential duplicates
+    if (duplicateCheck.suggestion === 'warn') {
+      console.warn(`[Transaction] Potential duplicate detected (${duplicateCheck.confidence}% confidence):`, duplicateCheck.reasons);
     }
 
     // Extract only the fields needed for CreateTransactionData
@@ -131,15 +154,31 @@ export async function createTransaction(data: CreateTransactionData): Promise<st
         }
       );
 
-      // Update related entities
-      // TODO: Implement budget update
-      // if (data.budgetId) {
-      //   await updateBudgetSpending(data.budgetId, data.amount);
-      // }
+      // Store audit entry
+      await storeAuditEntry(auditEntry);
 
-      // Check goal progress
-      // TODO: Implement goal progress check
-      // await checkGoalProgress(user.uid);
+      // Update budget spending
+      await budgetTransactionIntegration.onTransactionCreated({
+        id: transactionId,
+        ...transactionData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Transaction);
+
+      // Check goal progress (if goals service is available)
+      try {
+        // Import goals service dynamically to avoid circular dependencies
+        const { checkGoalProgress } = await import('@/lib/services/goal-progress-service');
+        await checkGoalProgress(user.uid, {
+          transactionId,
+          amount: transactionData.amount,
+          type: transactionData.type,
+          categoryId: transactionData.categoryId
+        });
+      } catch (error) {
+        console.warn('[Transaction] Goal progress service not available:', error);
+        // Continue without goal progress check - it's not critical
+      }
 
       // Trigger historical recalculation
       const createdTransaction: Transaction = {
@@ -164,7 +203,7 @@ export async function updateTransaction(
   expectedVersion: number
 ): Promise<boolean> {
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     const auth = getFirebaseAuth();
     const user = auth?.currentUser;
     
@@ -226,19 +265,19 @@ export async function updateTransaction(
       }
     );
 
-    // Update related entities if amount changed
-    // TODO: Implement budget update
-    // if (updates.amount !== undefined && currentTransaction.budgetId) {
-    //   const amountDiff = updates.amount - currentTransaction.amount;
-    //   await updateBudgetSpending(currentTransaction.budgetId, amountDiff);
-    // }
+    // Store audit entry
+    await storeAuditEntry(auditEntry);
 
-    // Trigger historical recalculation
+    // Update budget if transaction changed
     const updatedTransaction: Transaction = {
       ...currentTransaction,
       ...validatedUpdates,
       id: transactionId,
     } as Transaction;
+    
+    await budgetTransactionIntegration.onTransactionUpdated(currentTransaction, updatedTransaction);
+
+    // Trigger historical recalculation
     await triggerHistoricalRecalculation(user.uid, updatedTransaction, 'edit', currentTransaction.date);
 
     return true;
@@ -250,7 +289,7 @@ export async function updateTransaction(
 
 export async function deleteTransaction(transactionId: string): Promise<boolean> {
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     const auth = getFirebaseAuth();
     const user = auth?.currentUser;
     
@@ -280,11 +319,11 @@ export async function deleteTransaction(transactionId: string): Promise<boolean>
       }
     );
 
-    // Update budget if needed
-    // TODO: Implement budget update
-    // if (transaction.budgetId && transaction.type === 'expense') {
-    //   await updateBudgetSpending(transaction.budgetId, -transaction.amount);
-    // }
+    // Store audit entry
+    await storeAuditEntry(auditEntry);
+
+    // Update budget spending (reverse the transaction)
+    await budgetTransactionIntegration.onTransactionDeleted(transaction);
 
     // Trigger historical recalculation
     await triggerHistoricalRecalculation(user.uid, transaction, 'delete');
@@ -298,7 +337,7 @@ export async function deleteTransaction(transactionId: string): Promise<boolean>
 
 export async function getTransaction(transactionId: string): Promise<Transaction | null> {
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     const auth = getFirebaseAuth();
     const user = auth?.currentUser;
     
@@ -323,7 +362,7 @@ export async function getUserTransactions(
   }
 ): Promise<Transaction[]> {
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) {
       return [];
     }
@@ -344,69 +383,195 @@ export async function getUserTransactions(
   }
 }
 
-// Add real-time listener with conflict monitoring
+// Add real-time listener with conflict monitoring and pagination
 export function subscribeToTransactions(
   userId: string,
   callback: (transactions: Transaction[], changes?: {
     added: Transaction[];
     modified: Transaction[];
     removed: Transaction[];
-  }) => void
-): Unsubscribe {
-  const db = getFirebaseDb();
-  if (!db) {
-    return () => {};
-  }
-
-  const transactionsRef = collection(db, 'transactions');
-  const q = query(
-    transactionsRef,
-    where('userId', '==', userId),
-    where('deleted', '!=', true),
-    orderBy('deleted'),
-    orderBy('date', 'desc')
-  );
-
-  return onSnapshot(q, (snapshot) => {
-    const transactions: Transaction[] = [];
-    const changes = {
-      added: [] as Transaction[],
-      modified: [] as Transaction[],
-      removed: [] as Transaction[],
+  }) => void,
+  options?: {
+    limit?: number;
+    startAfter?: DocumentSnapshot;
+    filters?: {
+      startDate?: Date;
+      endDate?: Date;
+      type?: Transaction['type'];
+      categoryId?: string;
     };
+  }
+): Unsubscribe {
+  // NOTE: This function cannot be made async, so use .then()
+  let unsub: Unsubscribe = () => {};
+  getFirebaseDb().then(db => {
+    if (!db) return;
+    
+    // Use user-scoped subcollection for better performance
+    const userDocRef = doc(db, 'users', userId);
+    let q = query(
+      collection(userDocRef, 'transactions'),
+      where('deleted', '!=', true),
+      orderBy('deleted'),
+      orderBy('date', 'desc')
+    );
 
-    snapshot.docChanges().forEach((change) => {
-      const data = change.doc.data();
-      const transaction = {
-        id: change.doc.id,
-        ...data,
-        date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date),
-        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
-        updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(data.updatedAt),
-      } as Transaction;
-
-      if (change.type === 'added') {
-        changes.added.push(transaction);
-      } else if (change.type === 'modified') {
-        changes.modified.push(transaction);
-      } else if (change.type === 'removed') {
-        changes.removed.push(transaction);
+    // Apply filters if provided
+    if (options?.filters) {
+      const { startDate, endDate, type, categoryId } = options.filters;
+      
+      if (startDate) {
+        q = query(q, where('date', '>=', startDate));
       }
-    });
+      if (endDate) {
+        q = query(q, where('date', '<=', endDate));
+      }
+      if (type) {
+        q = query(q, where('type', '==', type));
+      }
+      if (categoryId) {
+        q = query(q, where('categoryId', '==', categoryId));
+      }
+    }
 
-    snapshot.forEach((doc) => {
+    // Apply pagination
+    if (options?.startAfter) {
+      q = query(q, startAfter(options.startAfter));
+    }
+    
+    const limitCount = options?.limit || 50; // Default limit of 50
+    q = query(q, limit(limitCount));
+
+    unsub = onSnapshot(q, (snapshot) => {
+      const transactions: Transaction[] = [];
+      const changes = {
+        added: [] as Transaction[],
+        modified: [] as Transaction[],
+        removed: [] as Transaction[],
+      };
+
+      snapshot.docChanges().forEach((change) => {
+        const data = change.doc.data();
+        const transaction = {
+          id: change.doc.id,
+          ...data,
+          date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date),
+          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
+          updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(data.updatedAt),
+        } as Transaction;
+
+        if (change.type === 'added') {
+          changes.added.push(transaction);
+        } else if (change.type === 'modified') {
+          changes.modified.push(transaction);
+        } else if (change.type === 'removed') {
+          changes.removed.push(transaction);
+        }
+      });
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        transactions.push({
+          id: doc.id,
+          ...data,
+          date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date),
+          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
+          updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(data.updatedAt),
+        } as Transaction);
+      });
+
+      callback(transactions, changes);
+    });
+  });
+  return () => unsub();
+}
+
+// Paginated transaction loader
+export async function loadTransactionsPage(
+  userId: string,
+  options?: {
+    limit?: number;
+    startAfter?: DocumentSnapshot;
+    filters?: {
+      startDate?: Date;
+      endDate?: Date;
+      type?: Transaction['type'];
+      categoryId?: string;
+    };
+  }
+): Promise<{
+  transactions: Transaction[];
+  lastDoc?: DocumentSnapshot;
+  hasMore: boolean;
+}> {
+  try {
+    const db = await getFirebaseDb();
+    if (!db) {
+      return { transactions: [], hasMore: false };
+    }
+
+    const userDocRef = doc(db, 'users', userId);
+    let q = query(
+      collection(userDocRef, 'transactions'),
+      where('deleted', '!=', true),
+      orderBy('deleted'),
+      orderBy('date', 'desc')
+    );
+
+    // Apply filters
+    if (options?.filters) {
+      const { startDate, endDate, type, categoryId } = options.filters;
+      
+      if (startDate) {
+        q = query(q, where('date', '>=', startDate));
+      }
+      if (endDate) {
+        q = query(q, where('date', '<=', endDate));
+      }
+      if (type) {
+        q = query(q, where('type', '==', type));
+      }
+      if (categoryId) {
+        q = query(q, where('categoryId', '==', categoryId));
+      }
+    }
+
+    // Apply pagination
+    if (options?.startAfter) {
+      q = query(q, startAfter(options.startAfter));
+    }
+    
+    const limitCount = (options?.limit || 25) + 1; // Get one extra to check if there are more
+    q = query(q, limit(limitCount));
+
+    const snapshot = await getDocs(q);
+    const docs = snapshot.docs;
+    
+    // Check if there are more documents
+    const hasMore = docs.length === limitCount;
+    const actualDocs = hasMore ? docs.slice(0, -1) : docs;
+    const lastDoc = actualDocs.length > 0 ? actualDocs[actualDocs.length - 1] : undefined;
+
+    const transactions: Transaction[] = actualDocs.map((doc) => {
       const data = doc.data();
-      transactions.push({
+      return {
         id: doc.id,
         ...data,
         date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date),
         createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
         updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(data.updatedAt),
-      } as Transaction);
+      } as Transaction;
     });
 
-    callback(transactions, changes);
-  });
+    return {
+      transactions,
+      lastDoc,
+      hasMore
+    };
+  } catch (error) {
+    console.error('Error loading transactions page:', error);
+    return { transactions: [], hasMore: false };
+  }
 }
 
 // Export formatting utility for UI
@@ -419,7 +584,7 @@ export async function canEditTransaction(transactionId: string): Promise<{
   lockedBy?: string;
 }> {
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     const auth = getFirebaseAuth();
     const user = auth?.currentUser;
     
@@ -456,4 +621,4 @@ export async function canEditTransaction(transactionId: string): Promise<{
     console.error('Error checking edit permission:', error);
     return { canEdit: false, reason: 'Error checking permissions' };
   }
-} 
+}

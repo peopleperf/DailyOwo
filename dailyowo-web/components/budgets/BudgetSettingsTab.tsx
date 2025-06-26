@@ -31,7 +31,7 @@ export function BudgetSettingsTab({ budgetData, onUpdate }: BudgetSettingsTabPro
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const db = getFirebaseDb();
+        const db = await getFirebaseDb();
         const auth = getAuth();
         const user = auth.currentUser;
         
@@ -56,7 +56,7 @@ export function BudgetSettingsTab({ budgetData, onUpdate }: BudgetSettingsTabPro
     setSettings(prev => ({ ...prev, [key]: value }));
     
     try {
-      const db = getFirebaseDb();
+      const db = await getFirebaseDb();
       const auth = getAuth();
       const user = auth.currentUser;
       
@@ -103,7 +103,7 @@ export function BudgetSettingsTab({ budgetData, onUpdate }: BudgetSettingsTabPro
     if (!budgetData.currentBudget) return;
     
     try {
-      const db = getFirebaseDb();
+      const db = await getFirebaseDb();
       const auth = getAuth();
       const user = auth.currentUser;
       

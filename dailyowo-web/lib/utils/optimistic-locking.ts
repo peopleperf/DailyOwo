@@ -51,7 +51,7 @@ export async function updateWithLock<T extends LockableDocument>(
   expectedVersion: number,
   conflictResolution?: ConflictResolution<T>
 ): Promise<UpdateResult<T>> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     return { success: false, error: 'Firebase is not initialized' };
   }
@@ -172,7 +172,7 @@ export async function acquireLock(
   userId: string,
   durationMs: number = 5 * 60 * 1000 // 5 minutes default
 ): Promise<boolean> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     return false;
   }
@@ -222,7 +222,7 @@ export async function releaseLock(
   documentId: string,
   userId: string
 ): Promise<boolean> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     return false;
   }
@@ -269,7 +269,7 @@ export async function checkForConflicts<T extends LockableDocument>(
   remoteVersion?: number;
   lockedBy?: string;
 }> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     return { hasConflict: true, conflictType: 'version' };
   }
@@ -410,7 +410,7 @@ export function createChangeMonitor(
     },
     
     async checkForChanges(collectionName: string) {
-      const db = getFirebaseDb();
+      const db = await getFirebaseDb();
       if (!db) return;
       
       for (const [documentId, localInfo] of monitoredDocs.entries()) {
@@ -432,4 +432,4 @@ export function createChangeMonitor(
       }
     },
   };
-} 
+}

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/firebase/auth-context';
-import { useTranslations } from 'next-intl';
 import { GlassContainer } from '@/components/ui/GlassContainer';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { GlassInput } from '@/components/ui/GlassInput';
@@ -15,7 +14,6 @@ import { BudgetSummary } from './BudgetSummary';
 
 export function FinancialProfileTab() {
   const { user, userProfile, updateUserProfile } = useAuth();
-  const t = useTranslations('dashboard.financialProfile');
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,10 +68,10 @@ export function FinancialProfileTab() {
 
     try {
       await updateUserProfile(formData);
-      setSuccess(t('updateSuccess'));
+      setSuccess('Profile updated successfully.');
       setIsEditing(false);
     } catch (err) {
-      setError(t('updateError'));
+      setError('Failed to update profile.');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -88,7 +86,7 @@ export function FinancialProfileTab() {
     
     try {
       await initializeFinancialDataFromProfile(user.uid, userProfile);
-      setSuccess(t('initializeSuccess'));
+      setSuccess('Financial data initialized successfully.');
       setHasData(true);
       
       // Refresh the page after a short delay to load the new data
@@ -96,7 +94,7 @@ export function FinancialProfileTab() {
         window.location.reload();
       }, 1500);
     } catch (err) {
-      setError(t('initializeError'));
+      setError('Failed to initialize financial data.');
       console.error(err);
     } finally {
       setIsInitializing(false);
@@ -104,11 +102,11 @@ export function FinancialProfileTab() {
   };
 
   const financialFields = [
-    { name: 'monthlyIncome', label: t('monthlyIncome'), type: 'number' },
-    { name: 'monthlyExpenses', label: t('monthlyExpenses'), type: 'number' },
-    { name: 'currentSavings', label: t('currentSavings'), type: 'number' },
-    { name: 'currentDebt', label: t('currentDebt'), type: 'number' },
-    { name: 'currency', label: t('currency'), type: 'text' },
+    { name: 'monthlyIncome', label: 'Monthly Income', type: 'number' },
+    { name: 'monthlyExpenses', label: 'Monthly Expenses', type: 'number' },
+    { name: 'currentSavings', label: 'Current Savings', type: 'number' },
+    { name: 'currentDebt', label: 'Current Debt', type: 'number' },
+    { name: 'currency', label: 'Currency', type: 'text' },
   ];
 
   return (
@@ -122,10 +120,10 @@ export function FinancialProfileTab() {
     >
       <GlassContainer className="p-6 md:p-8">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-light text-primary">{t('title')}</h3>
+          <h3 className="text-xl font-light text-primary">Financial Profile</h3>
           <GlassButton onClick={handleEditToggle} variant="secondary" className="py-2 px-4 text-xs">
             <Icon name={isEditing ? 'close' : 'edit'} size="sm" className="mr-2" />
-            {isEditing ? t('cancel') : t('edit')}
+            {isEditing ? 'Cancel' : 'Edit'}
           </GlassButton>
         </div>
 
@@ -137,9 +135,9 @@ export function FinancialProfileTab() {
             <div className="flex items-start gap-3">
               <Icon name="info" className="text-amber-600 mt-0.5" size="sm" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-800 mb-1">{t('noDataFound')}</p>
+                <p className="text-sm font-medium text-amber-800 mb-1">No financial data found</p>
                 <p className="text-sm text-amber-700 mb-3">
-                  {t('noDataDescription')}
+                  It looks like your core financial data hasn't been set up yet. Initializing this will help create budgets and provide better insights.
                 </p>
                 <GlassButton
                   onClick={handleInitializeData}
@@ -150,12 +148,12 @@ export function FinancialProfileTab() {
                   {isInitializing ? (
                     <>
                       <Loader size="sm" className="mr-2" />
-                      {t('initializing')}
+                      Initializing...
                     </>
                   ) : (
                     <>
                       <RefreshCw className="w-3 h-3 mr-2" />
-                      {t('initializeData')}
+                      Initialize Data
                     </>
                   )}
                 </GlassButton>
@@ -194,7 +192,7 @@ export function FinancialProfileTab() {
           {isEditing && (
             <div className="mt-8 flex justify-end">
               <GlassButton type="submit" disabled={isLoading} goldBorder>
-                {isLoading ? <Loader size="sm" /> : t('saveChanges')}
+                {isLoading ? <Loader size="sm" /> : 'Save Changes'}
               </GlassButton>
             </div>
           )}

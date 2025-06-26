@@ -1,21 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Brain, Lightbulb, TrendingUp, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Brain, Lightbulb, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { GlassContainer } from '@/components/ui/GlassContainer';
 
 export function InsightTab() {
   // Placeholder insights - in the future this would come from AI analysis
   const insights = [
-    {
-      type: 'optimization',
-      icon: TrendingUp,
-      title: 'Savings Rate Opportunity',
-      description: 'Your current savings rate is excellent at 97.5%. Consider diversifying into investment assets for growth.',
-      priority: 'high',
-      action: 'Explore investment options in the Assets tab',
-      impact: 'High potential for wealth growth'
-    },
     {
       type: 'warning',
       icon: AlertTriangle,
@@ -279,4 +270,4 @@ export function InsightTab() {
       </motion.div>
     </div>
   );
-} 
+}

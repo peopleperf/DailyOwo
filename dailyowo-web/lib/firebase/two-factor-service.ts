@@ -34,14 +34,14 @@ class TwoFactorService {
     this.initializeDb();
   }
 
-  private initializeDb() {
+  private async initializeDb() {
     if (typeof window === 'undefined') return;
-    this.db = getFirebaseDb();
+    this.db = await getFirebaseDb();
   }
 
-  private getDb() {
+  private async getDb() {
     if (!this.db) {
-      this.initializeDb();
+      await this.initializeDb();
     }
     return this.db;
   }
@@ -152,7 +152,7 @@ class TwoFactorService {
    * Setup 2FA for a user
    */
   async setup2FA(userId: string, userEmail: string): Promise<{ secret: string; qrCodeURL: string; backupCodes: string[] }> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const secret = this.generateSecret();
@@ -187,7 +187,7 @@ class TwoFactorService {
    * Enable 2FA after verification
    */
   async enable2FA(userId: string, verificationCode: string): Promise<boolean> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const settings = await this.get2FASettings(userId);
@@ -214,7 +214,7 @@ class TwoFactorService {
    * Disable 2FA
    */
   async disable2FA(userId: string, verificationCode: string): Promise<boolean> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const settings = await this.get2FASettings(userId);
@@ -240,7 +240,7 @@ class TwoFactorService {
    * Verify 2FA code
    */
   async verify2FACode(userId: string, code: string): Promise<boolean> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const settings = await this.get2FASettings(userId);
@@ -262,15 +262,12 @@ class TwoFactorService {
     if (backupCodeIndex !== -1) {
       // Remove used backup code
       const updatedBackupCodes = settings.backupCodes.filter(c => c !== code);
-      
       await updateDoc(doc(db, 'users', userId, 'security', '2fa'), {
         backupCodes: updatedBackupCodes,
         lastUsed: Timestamp.fromDate(new Date())
       });
-      
       return true;
     }
-
     return false;
   }
 
@@ -278,7 +275,7 @@ class TwoFactorService {
    * Get 2FA settings for a user
    */
   async get2FASettings(userId: string): Promise<TwoFactorSettings | null> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const settingsDoc = await getDoc(doc(db, 'users', userId, 'security', '2fa'));
@@ -313,7 +310,7 @@ class TwoFactorService {
    * Generate new backup codes
    */
   async generateNewBackupCodes(userId: string, verificationCode: string): Promise<string[]> {
-    const db = this.getDb();
+    const db = await this.getDb();
     if (!db) throw new Error('Database not initialized');
 
     const settings = await this.get2FASettings(userId);
@@ -401,4 +398,4 @@ class TwoFactorService {
   }
 }
 
-export const twoFactorService = new TwoFactorService(); 
+export const twoFactorService = new TwoFactorService();

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTranslations } from 'next-intl';
+
 import { GlassContainer } from '@/components/ui/GlassContainer';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { Icon } from '@/components/ui/Icon';
@@ -17,8 +17,6 @@ interface CompletionStepProps {
 }
 
 export function CompletionStep({ data, onComplete, isLoading = false }: CompletionStepProps) {
-  const t = useTranslations('onboarding.completion');
-  const tCommon = useTranslations('common');
   const [showContent, setShowContent] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'ai-insights'>('overview');
 
@@ -94,17 +92,15 @@ export function CompletionStep({ data, onComplete, isLoading = false }: Completi
     if (savingsRate < 10) {
       recommendations.push({
         icon: 'trendingUp',
-        title: 'Boost Your Savings',
-        text: 'We\'ll help you find smart ways to cut expenses and increase your savings rate.',
-        priority: 'high',
-        color: 'red'
+        title: 'Boost Your Savings Rate',
+        text: 'Your savings rate is a bit low. Try to identify areas where you can cut back on spending to increase your monthly savings.',
+        color: 'yellow'
       });
     } else if (savingsRate < 20) {
       recommendations.push({
         icon: 'target',
         title: 'Level Up Your Savings',
         text: 'You\'re doing well! Let\'s push for 20% to accelerate your wealth building.',
-        priority: 'medium',
         color: 'yellow'
       });
     }
@@ -112,19 +108,17 @@ export function CompletionStep({ data, onComplete, isLoading = false }: Completi
     if (emergencyFundMonths < 3) {
       recommendations.push({
         icon: 'shield',
-        title: 'Build Your Safety Net',
-        text: 'We\'ll create a plan to build 3-6 months of emergency savings.',
-        priority: 'high',
+        title: 'Build Your Emergency Fund',
+        text: 'Aim for at least 3 months of expenses in an easily accessible savings account. This will protect you from unexpected events.',
         color: 'red'
       });
     }
     
-    if (currentDebt > monthlyIncome * 3) {
+    if (currentDebt > monthlyIncome * 0.5 && currentDebt > 0) {
       recommendations.push({
-        icon: 'piggyBank',
-        title: 'Smart Debt Strategy',
-        text: 'Let\'s create a personalized plan to tackle your debt efficiently.',
-        priority: 'high',
+        icon: 'bomb',
+        title: 'Tackle High-Interest Debt',
+        text: 'If you have high-interest debt (like credit cards), focus on paying it down aggressively. This can save you a lot in interest payments.',
         color: 'red'
       });
     }
@@ -132,9 +126,8 @@ export function CompletionStep({ data, onComplete, isLoading = false }: Completi
     if (recommendations.length === 0) {
       recommendations.push({
         icon: 'star',
-        title: 'You\'re a Financial Star!',
-        text: 'Your finances are in great shape. Let\'s work on growing your wealth even more.',
-        priority: 'low',
+        title: "You're Off to a Great Start!",
+        text: 'Your finances are looking solid. Keep up the good work! Explore the dashboard to track your progress and discover more insights.',
         color: 'green'
       });
     }
@@ -156,13 +149,10 @@ export function CompletionStep({ data, onComplete, isLoading = false }: Completi
       transition={{ duration: 0.7 }}
       className="max-w-3xl mx-auto"
     >
-      {/* Main Glass Container */}
       <GlassContainer className="p-8 md:p-12 relative overflow-hidden">
-        {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-gold/20 to-transparent rounded-full blur-2xl" />
         <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-primary/20 to-transparent rounded-full blur-2xl" />
         
-        {/* Success Header */}
         <div className="text-center mb-10 relative z-10">
           <motion.div
             initial={{ scale: 0, rotate: -180 }}
@@ -179,40 +169,36 @@ export function CompletionStep({ data, onComplete, isLoading = false }: Completi
             transition={{ delay: 0.5 }}
           >
             <h2 className="text-3xl md:text-4xl font-bold text-primary mb-3">
-              Congratulations! 
+              You're All Set!
             </h2>
             <p className="text-lg text-primary/70 max-w-md mx-auto">
-              Your financial journey starts here. We've analyzed your profile and prepared personalized insights.
+              Welcome to DailyOwo! Your financial dashboard is ready.
             </p>
           </motion.div>
         </div>
 
         {showContent && (
           <>
-            {/* Tab Navigation */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
-              className="flex gap-2 mb-8 p-1 bg-gray-100 rounded-xl"
+              className="flex justify-center gap-2 mb-8 p-1 bg-primary/5 rounded-xl"
             >
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
-                    activeTab === tab.id
-                      ? 'bg-white text-primary shadow-sm'
-                      : 'text-primary/60 hover:text-primary'
-                  }`}
-                >
-                  <tab.icon className="w-5 h-5" />
-                  {tab.label}
-                </button>
-              ))}
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${activeTab === 'overview' ? 'bg-white shadow text-primary' : 'text-primary/60 hover:bg-primary/10'}`}
+              >
+                Overview
+              </button>
+              <button
+                onClick={() => setActiveTab('ai-insights')}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${activeTab === 'ai-insights' ? 'bg-white shadow text-primary' : 'text-primary/60 hover:bg-primary/10'}`}
+              >
+                AI Insights
+              </button>
             </motion.div>
 
-            {/* Tab Content */}
             <AnimatePresence mode="wait">
               {activeTab === 'overview' && (
                 <motion.div
@@ -222,7 +208,6 @@ export function CompletionStep({ data, onComplete, isLoading = false }: Completi
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  {/* Financial Insights Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
                     {insights.map((insight, index) => (
                       <motion.div
@@ -248,7 +233,6 @@ export function CompletionStep({ data, onComplete, isLoading = false }: Completi
                     ))}
                   </div>
 
-                  {/* What's Next Section */}
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -288,9 +272,9 @@ export function CompletionStep({ data, onComplete, isLoading = false }: Completi
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <div className="mb-6">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 bg-gradient-to-br from-gold to-gold-dark rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="text-center mb-8">
+                    <div className="flex items-center justify-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold to-yellow-400 flex items-center justify-center shadow-lg">
                         <Sparkles className="w-5 h-5 text-white" />
                       </div>
                       <h3 className="text-xl font-bold text-primary">Personalized Recommendations</h3>
@@ -308,17 +292,11 @@ export function CompletionStep({ data, onComplete, isLoading = false }: Completi
                         className="glass-subtle p-5 rounded-xl hover:shadow-md transition-all group cursor-pointer"
                       >
                         <div className="flex items-start gap-4">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            rec.color === 'red' ? 'bg-red-100' :
-                            rec.color === 'yellow' ? 'bg-yellow-100' : 'bg-green-100'
-                          }`}>
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${rec.color === 'red' ? 'bg-red-100' : rec.color === 'yellow' ? 'bg-yellow-100' : 'bg-green-100'}`}>
                             <Icon 
                               name={rec.icon as any} 
                               size="sm" 
-                              className={
-                                rec.color === 'red' ? 'text-red-600' :
-                                rec.color === 'yellow' ? 'text-yellow-600' : 'text-green-600'
-                              }
+                              className={`${rec.color === 'red' ? 'text-red-600' : rec.color === 'yellow' ? 'text-yellow-600' : 'text-green-600'}`}
                             />
                           </div>
                           <div className="flex-1">
@@ -331,7 +309,6 @@ export function CompletionStep({ data, onComplete, isLoading = false }: Completi
                     ))}
                   </div>
 
-                  {/* Additional AI Features Preview */}
                   <div className="p-4 bg-gradient-to-br from-gold/10 to-transparent rounded-xl">
                     <h4 className="font-semibold text-primary mb-2">Coming Soon: AI-Powered Features</h4>
                     <ul className="text-sm text-primary/70 space-y-1">
@@ -345,7 +322,6 @@ export function CompletionStep({ data, onComplete, isLoading = false }: Completi
               )}
             </AnimatePresence>
 
-            {/* Action Button */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

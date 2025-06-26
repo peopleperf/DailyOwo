@@ -99,7 +99,7 @@ async function calculateExpectedBalance(
   calculatedBalance: number;
   transactionSummary: ReconciliationRecord['transactions'];
 }> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     throw new Error('Firebase is not initialized');
   }
@@ -159,7 +159,7 @@ async function detectDiscrepancies(
   period: { startDate: Date; endDate: Date },
   balanceDifference: number
 ): Promise<ReconciliationDiscrepancy[]> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     throw new Error('Firebase is not initialized');
   }
@@ -248,7 +248,7 @@ export async function createReconciliation(
   openingBalance: number
 ): Promise<ReconciliationRecord> {
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) {
       throw new Error('Firebase is not initialized');
     }
@@ -322,7 +322,7 @@ export async function completeReconciliation(
   adjustments?: ReconciliationAdjustment[]
 ): Promise<void> {
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) {
       throw new Error('Firebase is not initialized');
     }
@@ -355,7 +355,7 @@ export async function getReconciliationHistory(
   maxResults?: number
 ): Promise<ReconciliationRecord[]> {
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) {
       throw new Error('Firebase is not initialized');
     }
@@ -396,7 +396,7 @@ export async function getReconciliationSummary(
   year: number
 ): Promise<ReconciliationSummary> {
   try {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) {
       throw new Error('Firebase is not initialized');
     }
@@ -523,7 +523,7 @@ async function getLastReconciliation(
   currentMonth: number,
   currentYear: number
 ): Promise<ReconciliationRecord | null> {
-  const db = getFirebaseDb();
+  const db = await getFirebaseDb();
   if (!db) {
     throw new Error('Firebase is not initialized');
   }
@@ -560,4 +560,4 @@ async function getLastReconciliation(
     updatedAt: doc.data().updatedAt?.toDate() || new Date(),
     reconciledAt: doc.data().reconciledAt?.toDate(),
   } as ReconciliationRecord;
-} 
+}

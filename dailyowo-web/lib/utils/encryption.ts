@@ -28,20 +28,14 @@ export const AMOUNT_FIELDS = [
   'totalLiabilities',
 ];
 
+import { keyManagementService } from '@/lib/services/key-management-service';
+
 /**
- * Get encryption key from environment or generate one
- * In production, this should come from a secure key management service
+ * Get encryption key from key management service
+ * @deprecated Use keyManagementService directly for new implementations
  */
 function getEncryptionKey(): string {
-  const key = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || process.env.ENCRYPTION_KEY;
-  
-  if (!key) {
-    console.warn('No encryption key found. Using default key - NOT SECURE FOR PRODUCTION');
-    // In production, this should throw an error
-    return 'DEFAULT_ENCRYPTION_KEY_CHANGE_IN_PRODUCTION';
-  }
-  
-  return key;
+  return keyManagementService.getEncryptionKey('transactions');
 }
 
 /**
@@ -135,7 +129,7 @@ export function decryptObject<T extends Record<string, any>>(
  */
 export function hashValue(value: string): string {
   if (!value) return value;
-  return CryptoJS.SHA256(value).toString();
+  return keyManagementService.generateSearchableHash(value);
 }
 
 /**

@@ -70,6 +70,9 @@ interface FinancialData {
   // Loading states
   isLoading: boolean;
   error: string | null;
+
+  // Add full transaction list for advanced consumers (AI, analytics)
+  allTransactions: Transaction[];
 }
 
 export function useFinancialData(): FinancialData {
@@ -201,6 +204,7 @@ export function useFinancialData(): FinancialData {
     activeGoalsCount: 0,
     isLoading: true,
     error: null,
+    allTransactions: [] // Initialize with empty array
   });
 
   // Effect for fetching data when user changes
@@ -329,105 +333,123 @@ export function useFinancialData(): FinancialData {
         activeGoalsCount: 0,
         isLoading: false,
         error: null,
+        allTransactions: [] // Reset on logout
       });
       return;
     }
 
-    const db = getFirebaseDb();
-    if (!db) {
+    const initializeDb = async () => {
+      const db = await getFirebaseDb();
+      if (!db) {
+        setData(prev => ({ 
+          ...prev, 
+          isLoading: false, 
+          error: 'Database not initialized' 
+        }));
+        return;
+      }
+
+      setData(prev => ({ ...prev, isLoading: true, error: null }));
+
+      // Set up queries
+      const transactionsRef = collection(db, 'users', user.uid, 'transactions');
+      const transactionsQuery = query(
+        transactionsRef,
+        orderBy('date', 'desc'),
+        limit(1000)
+      );
+
+      const goalsRef = collection(db, 'users', user.uid, 'goals');
+      const assetsRef = collection(db, 'users', user.uid, 'assets');
+      const liabilitiesRef = collection(db, 'users', user.uid, 'liabilities');
+
+      // Set up listeners with safe wrapper
+      const unsubscribeTransactions = safeOnSnapshot(
+        transactionsQuery,
+        `financial-data-transactions-${user.uid}`,
+        (snapshot) => {
+          const querySnapshot = snapshot as QuerySnapshot;
+          const transactionData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            date: doc.data().date?.toDate ? doc.data().date.toDate() : new Date(doc.data().date),
+            createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(),
+            updatedAt: doc.data().updatedAt?.toDate ? doc.data().updatedAt.toDate() : new Date()
+          })) as Transaction[];
+          
+          setTransactions(transactionData);
+        },
+        (error) => {
+          console.error('Error fetching transactions:', error);
+          setData(prev => ({ ...prev, error: error.message }));
+        }
+      );
+
+      const unsubscribeGoals = safeOnSnapshot(
+        goalsRef,
+        `financial-data-goals-${user.uid}`,
+        (snapshot) => {
+          const querySnapshot = snapshot as QuerySnapshot;
+          const goalsData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Goal[];
+          
+          setGoals(goalsData);
+        }
+      );
+
+      const unsubscribeAssets = safeOnSnapshot(
+        assetsRef,
+        `financial-data-assets-${user.uid}`,
+        (snapshot) => {
+          const querySnapshot = snapshot as QuerySnapshot;
+          const assetsData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Asset[];
+          
+          setAssets(assetsData);
+        }
+      );
+
+      const unsubscribeLiabilities = safeOnSnapshot(
+        liabilitiesRef,
+        `financial-data-liabilities-${user.uid}`,
+        (snapshot) => {
+          const querySnapshot = snapshot as QuerySnapshot;
+          const liabilitiesData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Liability[];
+          
+          setLiabilities(liabilitiesData);
+        }
+      );
+
+      // Cleanup function
+      return () => {
+        unsubscribeTransactions();
+        unsubscribeGoals();
+        unsubscribeAssets();
+        unsubscribeLiabilities();
+      };
+    };
+
+    initializeDb().catch(err => {
+      console.error('Error initializing database:', err);
       setData(prev => ({ 
         ...prev, 
         isLoading: false, 
-        error: 'Database not initialized' 
+        error: 'Failed to initialize database' 
       }));
-      return;
-    }
+    });
 
-    setData(prev => ({ ...prev, isLoading: true, error: null }));
-
-    // Set up queries
-    const transactionsRef = collection(db, 'users', user.uid, 'transactions');
-    const transactionsQuery = query(
-      transactionsRef,
-      orderBy('date', 'desc'),
-      limit(1000)
-    );
-
-    const goalsRef = collection(db, 'users', user.uid, 'goals');
-    const assetsRef = collection(db, 'users', user.uid, 'assets');
-    const liabilitiesRef = collection(db, 'users', user.uid, 'liabilities');
-
-    // Set up listeners with safe wrapper
-    const unsubscribeTransactions = safeOnSnapshot(
-      transactionsQuery,
-      `financial-data-transactions-${user.uid}`,
-      (snapshot) => {
-        const querySnapshot = snapshot as QuerySnapshot;
-        const transactionData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          date: doc.data().date?.toDate ? doc.data().date.toDate() : new Date(doc.data().date),
-          createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(),
-          updatedAt: doc.data().updatedAt?.toDate ? doc.data().updatedAt.toDate() : new Date()
-        })) as Transaction[];
-        
-        setTransactions(transactionData);
-      },
-      (error) => {
-        console.error('Error fetching transactions:', error);
-        setData(prev => ({ ...prev, error: error.message }));
-      }
-    );
-
-    const unsubscribeGoals = safeOnSnapshot(
-      goalsRef,
-      `financial-data-goals-${user.uid}`,
-      (snapshot) => {
-        const querySnapshot = snapshot as QuerySnapshot;
-        const goalsData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Goal[];
-        
-        setGoals(goalsData);
-      }
-    );
-
-    const unsubscribeAssets = safeOnSnapshot(
-      assetsRef,
-      `financial-data-assets-${user.uid}`,
-      (snapshot) => {
-        const querySnapshot = snapshot as QuerySnapshot;
-        const assetsData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Asset[];
-        
-        setAssets(assetsData);
-      }
-    );
-
-    const unsubscribeLiabilities = safeOnSnapshot(
-      liabilitiesRef,
-      `financial-data-liabilities-${user.uid}`,
-      (snapshot) => {
-        const querySnapshot = snapshot as QuerySnapshot;
-        const liabilitiesData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Liability[];
-        
-        setLiabilities(liabilitiesData);
-      }
-    );
-
-    // Cleanup function
     return () => {
-      unsubscribeTransactions();
-      unsubscribeGoals();
-      unsubscribeAssets();
-      unsubscribeLiabilities();
+      // Cleanup will be handled inside initializeDb
     };
+
+    // This block has been moved inside initializeDb function above
   }, [user]);
 
   // Effect for calculating financial data when dependencies change
@@ -501,7 +523,7 @@ export function useFinancialData(): FinancialData {
 
     const totalGoalsTarget = goals.reduce((acc, goal) => acc + goal.targetAmount, 0);
     const totalGoalsSaved = goals.reduce((acc, goal) => acc + goal.currentAmount, 0);
-    const activeGoalsCount = goals.filter(g => !g.isCompleted).length;
+    const activeGoalsCount = goals.filter(g => g.status === 'active').length;
 
     setData({
       netWorth: netWorthData,
@@ -527,9 +549,13 @@ export function useFinancialData(): FinancialData {
       activeGoalsCount,
       isLoading: false,
       error: null,
+      allTransactions: transactions // <-- expose full transaction list
     });
 
   }, [user, transactions, goals, assets, liabilities]);
 
-  return data;
-} 
+  return {
+    ...data,
+    allTransactions: transactions // <-- expose full transaction list
+  };
+}

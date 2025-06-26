@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useTranslations } from 'next-intl';
+
 import { GlassContainer } from '@/components/ui/GlassContainer';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { Icon } from '@/components/ui/Icon';
@@ -22,8 +22,8 @@ interface PreferencesStepProps {
 interface Preference {
   id: string;
   icon: string;
-  titleKey: string;
-  descriptionKey: string;
+  title: string;
+  description: string;
   recommended?: boolean;
 }
 
@@ -31,21 +31,21 @@ const FEATURES: Preference[] = [
   {
     id: 'offlineMode',
     icon: 'wifiOff',
-    titleKey: 'offlineMode.title',
-    descriptionKey: 'offlineMode.description',
+    title: 'Offline Mode',
+    description: 'Access your data without an internet connection.',
   },
   {
     id: 'cloudSync',
     icon: 'cloud',
-    titleKey: 'cloudSync.title',
-    descriptionKey: 'cloudSync.description',
+    title: 'Cloud Sync',
+    description: 'Keep your data synced across all devices.',
     recommended: true,
   },
   {
     id: 'aiInsights',
     icon: 'ai',
-    titleKey: 'aiAdvisor.title',
-    descriptionKey: 'aiAdvisor.description',
+    title: 'AI Financial Advisor',
+    description: 'Get smart insights and recommendations.',
     recommended: true,
   },
 ];
@@ -72,8 +72,6 @@ const NOTIFICATIONS = [
 ];
 
 export function PreferencesStep({ data, onNext, onBack, features }: PreferencesStepProps) {
-  const t = useTranslations('onboarding.preferences');
-  const tCommon = useTranslations('common');
   
   const [featurePrefs, setFeaturePrefs] = useState({
     offlineMode: features?.offlineMode ?? true,
@@ -112,10 +110,10 @@ export function PreferencesStep({ data, onNext, onBack, features }: PreferencesS
     <GlassContainer className="p-8 md:p-10">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-primary mb-2">
-          {t('title')}
+          Customize Your Experience
         </h2>
         <p className="text-primary/70">
-          {t('subtitle')}
+          Tailor DailyOwo to your needs.
         </p>
       </div>
 
@@ -143,18 +141,18 @@ export function PreferencesStep({ data, onNext, onBack, features }: PreferencesS
                   <Icon name={feature.icon as any} size="lg" />
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-primary">
-                      {t(feature.titleKey)}
+                  <div className="flex items-center">
+                    <h3 className="font-semibold text-primary mb-1">
+                      {feature.title}
                     </h3>
                     {feature.recommended && (
-                      <span className="text-xs bg-gold/10 text-gold px-2 py-0.5 rounded-full">
-                        {t('recommended')}
+                      <span className="ml-2 text-xs font-medium text-gold bg-gold/10 px-2 py-0.5 rounded-full">
+                        Recommended
                       </span>
                     )}
                   </div>
                   <p className="text-sm text-primary/60">
-                    {t(feature.descriptionKey)}
+                    {feature.description}
                   </p>
                 </div>
                 <div className="mt-1">
@@ -230,9 +228,9 @@ export function PreferencesStep({ data, onNext, onBack, features }: PreferencesS
       <div className="glass-subtle p-4 rounded-xl mb-8 flex items-start gap-3">
         <Icon name="shield" size="sm" className="text-gold mt-0.5" />
         <div>
-          <h4 className="font-medium text-primary mb-1">{t('privacyNote.title')}</h4>
+          <h4 className="font-medium text-primary mb-1">Your Privacy is Our Priority</h4>
           <p className="text-sm text-primary/70">
-            {t('privacyNote.description')}
+            We will never share your financial data without your consent.
           </p>
         </div>
       </div>
@@ -244,14 +242,14 @@ export function PreferencesStep({ data, onNext, onBack, features }: PreferencesS
           onClick={onBack}
         >
           <Icon name="arrowLeft" size="sm" className="mr-2" />
-          {tCommon('back')}
+          Back
         </GlassButton>
         <GlassButton
           variant="primary"
           goldBorder
           onClick={handleContinue}
         >
-          {tCommon('continue')}
+          Continue
           <Icon name="arrowRight" size="sm" className="ml-2" />
         </GlassButton>
       </div>

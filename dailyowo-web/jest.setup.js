@@ -43,11 +43,6 @@ jest.mock('next/navigation', () => ({
   },
 }))
 
-// Mock next-intl
-jest.mock('next-intl', () => ({
-  useLocale: () => 'en',
-  useTranslations: () => (key) => key,
-}))
 
 // Mock framer-motion
 jest.mock('framer-motion', () => ({

@@ -23,6 +23,8 @@ import { GlassContainer } from '@/components/ui/GlassContainer';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { CollapsibleCard } from '@/components/ui/CollapsibleCard';
 import { useAuth } from '@/lib/firebase/auth-context';
+import { getFirebaseDb } from '@/lib/firebase/config';
+import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
 
 interface PrivacySettings {
   dataVisibility: {
@@ -54,6 +56,7 @@ interface ExportModalProps {
 }
 
 function ExportDataModal({ isOpen, onClose }: ExportModalProps) {
+  const { user } = useAuth();
   const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv');
   const [exportScope, setExportScope] = useState<'all' | 'transactions' | 'goals' | 'budgets'>('all');
   const [dateRange, setDateRange] = useState<'all' | '1y' | '6m' | '3m'>('all');
@@ -61,36 +64,163 @@ function ExportDataModal({ isOpen, onClose }: ExportModalProps) {
   const [exportComplete, setExportComplete] = useState(false);
 
   const handleExport = async () => {
+    if (!user?.uid) {
+      alert('User not authenticated');
+      return;
+    }
+
     setIsExporting(true);
     
     try {
-      // Simulate export process
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // In production, this would:
-      // 1. Query Firebase for user's data based on scope and date range
-      // 2. Format data according to exportFormat
-      // 3. Generate downloadable file
-      // 4. Trigger download or email link
-      
-      const exportData = {
-        user: 'current-user-id',
-        scope: exportScope,
-        format: exportFormat,
-        dateRange: dateRange,
-        exportedAt: new Date().toISOString(),
-        recordCount: exportScope === 'all' ? 1250 : 
-                    exportScope === 'transactions' ? 800 : 
-                    exportScope === 'goals' ? 15 : 50
+      const db = await getFirebaseDb();
+      if (!db) {
+        throw new Error('Database not available');
+      }
+
+      const exportData: any = {
+        user: {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName
+        },
+        exportInfo: {
+          scope: exportScope,
+          format: exportFormat,
+          dateRange: dateRange,
+          exportedAt: new Date().toISOString()
+        },
+        data: {}
       };
+
+      // Calculate date filter
+      let startDate: Date | null = null;
+      if (dateRange !== 'all') {
+        const now = new Date();
+        const months = dateRange === '1y' ? 12 : dateRange === '6m' ? 6 : 3;
+        startDate = new Date(now.getFullYear(), now.getMonth() - months, 1);
+      }
+
+      // Fetch transactions
+      if (exportScope === 'all' || exportScope === 'transactions') {
+        const transactionsRef = collection(db, 'users', user.uid, 'transactions');
+        let transactionsQuery = query(
+          transactionsRef,
+          where('deleted', '!=', true),
+          orderBy('deleted'),
+          orderBy('date', 'desc')
+        );
+
+        if (startDate) {
+          transactionsQuery = query(
+            transactionsRef,
+            where('deleted', '!=', true),
+            where('date', '>=', Timestamp.fromDate(startDate)),
+            orderBy('deleted'),
+            orderBy('date', 'desc')
+          );
+        }
+
+        const transactionsSnapshot = await getDocs(transactionsQuery);
+        exportData.data.transactions = transactionsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          date: doc.data().date?.toDate?.()?.toISOString() || doc.data().date,
+          createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
+          updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt
+        }));
+      }
+
+      // Fetch goals
+      if (exportScope === 'all' || exportScope === 'goals') {
+        const goalsRef = collection(db, 'goals');
+        const goalsQuery = query(goalsRef, where('userId', '==', user.uid));
+        const goalsSnapshot = await getDocs(goalsQuery);
+        exportData.data.goals = goalsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          targetDate: doc.data().targetDate?.toDate?.()?.toISOString() || doc.data().targetDate,
+          createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
+          updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt
+        }));
+      }
+
+      // Fetch budgets
+      if (exportScope === 'all' || exportScope === 'budgets') {
+        const budgetsRef = collection(db, 'users', user.uid, 'budgets');
+        const budgetsQuery = query(budgetsRef, orderBy('createdAt', 'desc'));
+        const budgetsSnapshot = await getDocs(budgetsQuery);
+        exportData.data.budgets = budgetsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
+          updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt
+        }));
+      }
+
+      // Add user profile data if exporting all
+      if (exportScope === 'all') {
+        // TODO: Add user profile data
+        exportData.data.profile = {};
+        /*
+        exportData.data.profile = {
+          ...userProfile,
+          createdAt: userProfile?.createdAt?.toDate?.()?.toISOString() || userProfile?.createdAt,
+          updatedAt: userProfile?.updatedAt?.toDate?.()?.toISOString() || userProfile?.updatedAt
+        };
+        */
+
+        // Fetch family data
+        try {
+          const familyRef = collection(db, 'users', user.uid, 'family');
+          const familySnapshot = await getDocs(familyRef);
+          exportData.data.family = familySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            joinedAt: doc.data().joinedAt?.toDate?.()?.toISOString() || doc.data().joinedAt
+          }));
+
+          const invitationsRef = collection(db, 'users', user.uid, 'familyInvitations');
+          const invitationsSnapshot = await getDocs(invitationsRef);
+          exportData.data.familyInvitations = invitationsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            sentAt: doc.data().sentAt?.toDate?.()?.toISOString() || doc.data().sentAt
+          }));
+        } catch (familyError) {
+          console.warn('Could not fetch family data:', familyError);
+        }
+      }
+
+      // Calculate record counts
+      const recordCount = Object.values(exportData.data).reduce((total: number, dataSet: any) => {
+        return total + (Array.isArray(dataSet) ? dataSet.length : 0);
+      }, 0);
+
+      exportData.exportInfo.recordCount = recordCount;
       
-      console.log('Export completed:', exportData);
+      console.log('Real export completed:', exportData);
       
       // Create and download file
-      const filename = `dailyowo-export-${exportScope}-${Date.now()}.${exportFormat}`;
-      const content = exportFormat === 'json' 
-        ? JSON.stringify(exportData, null, 2)
-        : `Date,Type,Amount,Category\n${new Date().toISOString()},Export,0,System`;
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+      const filename = `dailyowo-export-${exportScope}-${timestamp}.${exportFormat}`;
+      
+      let content: string;
+      if (exportFormat === 'json') {
+        content = JSON.stringify(exportData, null, 2);
+      } else {
+        // Create CSV content
+        content = 'Type,Date,Description,Amount,Category,Currency\n';
+        if (exportData.data.transactions) {
+          exportData.data.transactions.forEach((t: any) => {
+            content += `${t.type || 'unknown'},${t.date || ''},${t.description || ''},${t.amount || 0},${t.categoryId || ''},${t.currency || 'USD'}\n`;
+          });
+        }
+        if (exportData.data.goals) {
+          exportData.data.goals.forEach((g: any) => {
+            content += `goal,${g.targetDate || ''},${g.name || ''},${g.targetAmount || 0},${g.category || ''},${g.currency || 'USD'}\n`;
+          });
+        }
+      }
       
       const blob = new Blob([content], { 
         type: exportFormat === 'json' ? 'application/json' : 'text/csv' 

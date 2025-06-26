@@ -2,142 +2,328 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Development mode rules - allows read/write for authenticated users
     
-    // User profiles collection (used by user-profile-service.ts)
-    match /userProfiles/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId;
+    // ===== HELPER FUNCTIONS =====
+    
+    function isAuthenticated() {
+      return request.auth != null;
     }
     
-    // Audit logs for security events
-    match /audit_logs/{document} {
-      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow write: if request.auth != null;
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
     }
     
-    // User profiles and their subcollections
+    // AI Service function - allows Firebase Admin SDK for AI operations
+    function isAIService() {
+      // Firebase Admin SDK typically bypasses rules, but if we're using 
+      // client SDK with service account tokens, check for custom claims
+      return request.auth != null && 
+             (request.auth.token.firebase.sign_in_provider == 'custom' ||
+              request.auth.token.admin == true ||
+              request.auth.token.service_account == true);
+    }
+    
+    // Get user's family document
+    function getFamilyDoc(familyId) {
+      return get(/databases/$(database)/documents/families/$(familyId));
+    }
+    
+    // Check if user is family member
+    function isFamilyMember(familyId) {
+      return request.auth.uid in getFamilyDoc(familyId).data.members;
+    }
+    
+    // Get user's role from family
+    function getUserRole(familyId) {
+      return getFamilyDoc(familyId).data.members[request.auth.uid];
+    }
+    
+    // Role-based permissions
+    function isPrincipal(familyId) {
+      return getUserRole(familyId) == 'principal';
+    }
+    
+    function isAdmin(familyId) {
+      let role = getUserRole(familyId);
+      return role == 'principal' || role == 'co-principal' || role == 'partner';
+    }
+    
+    function canViewFinancials(familyId) {
+      let role = getUserRole(familyId);
+      return role in ['principal', 'co-principal', 'partner', 'parent', 'advisor', 'accountant'];
+    }
+    
+    function canManageTransactions(familyId) {
+      let role = getUserRole(familyId);
+      return role in ['principal', 'co-principal', 'partner'];
+    }
+    
+    function canManageFamily(familyId) {
+      return isAdmin(familyId);
+    }
+    
+    // ===== USER PROFILES & CORE DATA =====
+    
+    // Main user document
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId) || isAIService();
+      allow write: if isOwner(userId) ||
+        (request.resource.data.keys().hasOnly(['emailVerified', 'emailVerifiedAt']) &&
+         request.resource.data.emailVerified == true);
+      allow create: if isAuthenticated() &&
+        request.resource.data.keys().hasAll(['uid', 'email']) &&
+        request.resource.data.uid == request.auth.uid;
       
-      // User subcollections - the key fix for app structure
-      match /{subcollection}/{document} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      // User subcollections with AI access
+      match /transactions/{transactionId} {
+        allow read: if isOwner(userId) || isAIService();
+        allow write: if isOwner(userId);
+        allow create: if isOwner(userId);
       }
       
-      // Explicitly allow all possible subcollections for clarity
-      match /transactions/{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /budgets/{budgetId} {
+        allow read: if isOwner(userId) || isAIService();
+        allow write: if isOwner(userId);
+        allow create: if isOwner(userId);
       }
       
-      match /budgets/{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /goals/{goalId} {
+        allow read: if isOwner(userId) || isAIService();
+        allow write: if isOwner(userId);
+        allow create: if isOwner(userId);
       }
       
-      match /goals/{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /categories/{categoryId} {
+        allow read: if isOwner(userId) || isAIService();
+        allow write: if isOwner(userId);
+        allow create: if isOwner(userId);
       }
       
-      match /assets/{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /accounts/{accountId} {
+        allow read: if isOwner(userId) || isAIService();
+        allow write: if isOwner(userId);
+        allow create: if isOwner(userId);
       }
       
-      match /liabilities/{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /assets/{assetId} {
+        allow read: if isOwner(userId) || isAIService();
+        allow write: if isOwner(userId);
+        allow create: if isOwner(userId);
       }
       
-      match /categories/{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /liabilities/{liabilityId} {
+        allow read: if isOwner(userId) || isAIService();
+        allow write: if isOwner(userId);
+        allow create: if isOwner(userId);
       }
       
-      match /accounts/{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /cryptoHoldings/{holdingId} {
+        allow read: if isOwner(userId) || isAIService();
+        allow write: if isOwner(userId);
+        allow create: if isOwner(userId);
       }
       
-      match /sessions/{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /settings/{settingId} {
+        allow read: if isOwner(userId) || isAIService();
+        allow write: if isOwner(userId);
+        allow create: if isOwner(userId);
       }
       
-      match /loginActivities/{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /notifications/{notificationId} {
+        allow read, write: if isOwner(userId);
+        allow create: if isOwner(userId);
       }
       
-      match /security/{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /sessions/{sessionId} {
+        allow read, write: if isOwner(userId);
+        allow create: if isOwner(userId);
+      }
+      
+      match /audit_logs/{logId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId);
+      }
+      
+      // Security-related subcollections (no AI access)
+      match /security/{securityDoc} {
+        allow read, write: if isOwner(userId);
+        allow create: if isOwner(userId);
+      }
+      
+      match /twoFactorTokens/{tokenId} {
+        allow read, write: if isOwner(userId);
+        allow create: if isOwner(userId);
+      }
+      
+      match /backupCodes/{codeId} {
+        allow read, write: if isOwner(userId);
+        allow create: if isOwner(userId);
       }
     }
     
-    // Family documents
+    // Extended user profiles
+    match /userProfiles/{userId} {
+      allow read: if isOwner(userId) || isAIService();
+      allow write: if isOwner(userId);
+      allow create: if isAuthenticated() &&
+        request.resource.data.keys().hasAll(['uid', 'email']) &&
+        request.resource.data.uid == request.auth.uid;
+    }
+    
+    // ===== FAMILY MANAGEMENT =====
+    
     match /families/{familyId} {
-      allow read, write: if request.auth != null;
+      allow read: if isAuthenticated() && isFamilyMember(familyId);
+      allow create: if isAuthenticated() &&
+        request.resource.data.members[request.auth.uid] == 'principal';
+      allow update: if isAuthenticated() && isFamilyMember(familyId) && canManageFamily(familyId);
+      allow delete: if isAuthenticated() && isPrincipal(familyId);
     }
     
-    // Family invitations
     match /family_invitations/{invitationId} {
-      allow read, write: if request.auth != null;
+      allow read: if isAuthenticated() &&
+        (request.auth.token.email == resource.data.invitedEmail ||
+         canManageFamily(resource.data.familyId));
+      allow create: if isAuthenticated() && canManageFamily(request.resource.data.familyId);
+      allow update: if isAuthenticated() &&
+        (request.auth.token.email == resource.data.invitedEmail ||
+         canManageFamily(resource.data.familyId));
+      allow delete: if isAuthenticated() && canManageFamily(resource.data.familyId);
     }
     
-    // Legacy top-level collections (for backwards compatibility)
-    match /transactions/{document} {
-      allow read, write: if request.auth != null;
+    // ===== AI & RECEIPT PROCESSING =====
+    
+    match /receipts/{receiptId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
     
-    match /budgets/{document} {
-      allow read, write: if request.auth != null;
+    match /ai_cache/{cacheId} {
+      allow read, write: if isAuthenticated() && 
+        (isOwner(resource.data.userId) || isAIService());
+      allow create: if isAuthenticated() && 
+        (request.resource.data.userId == request.auth.uid || isAIService());
     }
     
-    match /goals/{document} {
-      allow read, write: if request.auth != null;
+    match /ai_usage_logs/{logId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && 
+        (request.resource.data.userId == request.auth.uid || isAIService());
     }
     
-    match /categories/{document} {
-      allow read, write: if request.auth != null;
+    match /chatSessions/{sessionId} {
+      allow read, write: if isAuthenticated() &&
+        (isOwner(resource.data.userId) || request.auth.uid == resource.data.userId);
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
     }
     
-    match /accounts/{document} {
-      allow read, write: if request.auth != null;
+    // ===== LEGACY COLLECTIONS (for backwards compatibility) =====
+    
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated() && (
+        isOwner(resource.data.userId) ||
+        (resource.data.familyId != null &&
+         isFamilyMember(resource.data.familyId) &&
+         canViewFinancials(resource.data.familyId) &&
+         resource.data.isPrivate != true) ||
+        isAIService()
+      );
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      allow update: if isAuthenticated() && (
+        isOwner(resource.data.userId) ||
+        (resource.data.familyId != null &&
+         isFamilyMember(resource.data.familyId) &&
+         canManageTransactions(resource.data.familyId))
+      );
+      allow delete: if isAuthenticated() && (
+        isOwner(resource.data.userId) ||
+        (resource.data.familyId != null &&
+         isFamilyMember(resource.data.familyId) &&
+         isAdmin(resource.data.familyId))
+      );
     }
     
-    match /assets/{document} {
-      allow read, write: if request.auth != null;
+    match /goals/{goalId} {
+      allow read: if isAuthenticated() && (
+        isOwner(resource.data.userId) ||
+        (resource.data.familyId != null &&
+         resource.data.isShared == true &&
+         isFamilyMember(resource.data.familyId) &&
+         canViewFinancials(resource.data.familyId)) ||
+        isAIService()
+      );
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      allow update, delete: if isAuthenticated() && (
+        isOwner(resource.data.userId) ||
+        (resource.data.familyId != null &&
+         isFamilyMember(resource.data.familyId) &&
+         isAdmin(resource.data.familyId))
+      );
     }
     
-    match /debts/{document} {
-      allow read, write: if request.auth != null;
+    // ===== CRYPTO & INVESTMENTS =====
+    
+    match /cryptoHoldings/{holdingId} {
+      allow read: if isAuthenticated() && (
+        isOwner(resource.data.userId) || isAIService()
+      );
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
     
-    // Test collections for connection testing
+    match /priceAlerts/{alertId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+    
+    // ===== SECURITY & AUTHENTICATION =====
+    
+    match /twoFactorAuth/{userId} {
+      allow read, write: if isOwner(userId);
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    match /sessions/{sessionId} {
+      allow read, write: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+    
+    match /auditTrail/{auditId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+    
+    match /emailVerificationTokens/{tokenId} {
+      allow create: if isAuthenticated() &&
+        request.resource.data.keys().hasAll(['userId', 'email', 'token', 'expiresAt']) &&
+        request.resource.data.userId == request.auth.uid;
+      allow get: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.keys().hasOnly(['used']) &&
+        request.resource.data.used == true;
+      allow delete: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // ===== TEST COLLECTIONS =====
+    
     match /test/{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isAuthenticated();
     }
     
     match /public-test/{document=**} {
       allow read, write: if true;
     }
-    
-    // Diagnostic collections - allow full access for testing
-    match /test-diagnostics/{document=**} {
-      allow read, write: if true;
-    }
-    
-    match /diagnostic-logs/{document=**} {
-      allow read, write: if true;
-    }
-    
-    // Connection test collection (used by init-collections.ts)
-    match /_test_/{document=**} {
-      allow read, write: if true;
-    }
-    
-    // Development/staging collections for testing
-    match /dev-test/{document=**} {
-      allow read, write: if true;
-    }
-    
-    // Temporary collections for debugging
-    match /temp/{document=**} {
-      allow read, write: if true;
-    }
   }
-} 
+}

@@ -21,6 +21,25 @@ export function BudgetOverviewTab({ budgetData, currency, onRefresh }: BudgetOve
   const router = useRouter();
   const { currentBudget, budgetHealth, totalIncome, totalSpent, totalAllocated, totalSavings, alerts } = budgetData;
 
+  // CRITICAL: Log what the component receives
+  console.log('🎯 BudgetOverviewTab received budgetData:', {
+    totalIncome,
+    totalSpent,
+    totalAllocated,
+    totalSavings,
+    cashAtHand: budgetData.cashAtHand,
+    hasCurrentBudget: !!currentBudget
+  });
+  
+  // CRITICAL: Check if destructuring is the issue
+  console.log('🔍 Raw budgetData object:', budgetData);
+  console.log('🔍 Direct property access:', {
+    'budgetData.totalIncome': budgetData.totalIncome,
+    'budgetData.totalSpent': budgetData.totalSpent,
+    'destructured totalIncome': totalIncome,
+    'destructured totalSpent': totalSpent
+  });
+
   if (!currentBudget) {
     return (
       <div className="text-center py-12">

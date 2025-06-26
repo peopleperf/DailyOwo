@@ -70,11 +70,13 @@ export function ProfileHeader({ user, userProfile }: ProfileHeaderProps) {
 
   return (
     <>
-      <GlassContainer className="p-4 md:p-6 mb-6">
-        <div className="flex items-center gap-4">
-          {/* Compact Profile Photo */}
-          <div className="relative group">
-            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden bg-gradient-to-br from-gold/20 to-primary/20 flex items-center justify-center border-2 border-white/50 shadow-lg">
+      {/* Clean Profile Header Layout */}
+      <div className="w-full">
+        {/* Main Profile Section */}
+        <div className="flex items-start gap-6 mb-6">
+          {/* Profile Photo - Moved away from menu button */}
+          <div className="relative group flex-shrink-0">
+            <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-gold/20 to-primary/20 flex items-center justify-center border-2 border-white/30 shadow-lg">
               {user.photoURL ? (
                 <img
                   src={user.photoURL}
@@ -82,7 +84,7 @@ export function ProfileHeader({ user, userProfile }: ProfileHeaderProps) {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-lg md:text-xl font-light text-primary/80">
+                <span className="text-xl font-light text-primary/80">
                   {getInitials(displayName)}
                 </span>
               )}
@@ -105,68 +107,71 @@ export function ProfileHeader({ user, userProfile }: ProfileHeaderProps) {
             </label>
           </div>
 
-          {/* Compact Profile Info */}
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-2">
-              <h1 className="text-xl md:text-2xl font-light text-primary">
-                {displayName}
-              </h1>
-              
-              {/* Subscription Button */}
-              <GlassButton
-                onClick={() => setIsSubscriptionModalOpen(true)}
-                variant="primary"
-                goldBorder
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Crown className="w-4 h-4" />
-                <span className="hidden sm:inline">Premium</span>
-              </GlassButton>
-            </div>
+          {/* Profile Info */}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-light text-primary mb-1">
+              {displayName}
+            </h1>
             
-            {/* Compact Info Row */}
-            <div className="flex items-center gap-2 text-xs text-primary/60 mb-3">
-              <Mail className="w-3 h-3" />
-              <span className="truncate">{user.email}</span>
-              <span className="text-primary/40">•</span>
-              <Calendar className="w-3 h-3" />
-              <span>Since {formatDate(memberSince, { year: 'numeric', month: 'short' })}</span>
-              <span className="text-primary/40">•</span>
-              <span className="text-gold">85% Complete</span>
-            </div>
+            <p className="text-sm font-light text-primary/60 mb-4">
+              {user.email}
+            </p>
 
-            {/* Compact Stats Grid */}
-            <div className="grid grid-cols-4 gap-2">
-              <div className="text-center">
-                <p className="text-xs font-medium text-primary">
-                  {userProfile.currency || 'USD'}
+            {/* Quick Stats in a clean row */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="text-left">
+                <div className="flex items-center gap-2 text-primary/50 mb-1">
+                  <Calendar className="w-4 h-4" />
+                  <span className="text-xs font-light tracking-wide uppercase">Member Since</span>
+                </div>
+                <p className="text-sm font-medium text-primary">
+                  {formatDate(memberSince)}
                 </p>
-                <p className="text-[10px] text-primary/40 uppercase">Currency</p>
               </div>
               
-              <div className="text-center">
-                <p className="text-xs font-medium text-primary truncate">
-                  {formatRegionDisplay(userProfile.region || 'global')}
+              <div className="text-left">
+                <div className="flex items-center gap-2 text-primary/50 mb-1">
+                  <Mail className="w-4 h-4" />
+                  <span className="text-xs font-light tracking-wide uppercase">Email Status</span>
+                </div>
+                <p className="text-sm font-medium">
+                  {user.emailVerified ? (
+                    <span className="text-green-600">Verified</span>
+                  ) : (
+                    <span className="text-amber-600">Unverified</span>
+                  )}
                 </p>
-                <p className="text-[10px] text-primary/40 uppercase">Region</p>
               </div>
-              
-              <div className="text-center">
-                <p className="text-xs font-medium text-gold">Active</p>
-                <p className="text-[10px] text-primary/40 uppercase">Status</p>
+
+              <div className="text-left">
+                <div className="flex items-center gap-2 text-primary/50 mb-1">
+                  <Crown className="w-4 h-4" />
+                  <span className="text-xs font-light tracking-wide uppercase">Plan</span>
+                </div>
+                <p className="text-sm font-medium text-primary">
+                  {(userProfile as any)?.subscriptionStatus === 'active' ? (
+                    <span className="text-gold">Premium</span>
+                  ) : (
+                    'Free'
+                  )}
+                </p>
               </div>
-              
-              <div className="text-center">
-                <p className="text-xs font-medium text-primary">Premium</p>
-                <p className="text-[10px] text-primary/40 uppercase">Plan</p>
+
+              <div className="text-left">
+                <div className="flex items-center gap-2 text-primary/50 mb-1">
+                  <Zap className="w-4 h-4" />
+                  <span className="text-xs font-light tracking-wide uppercase">Region</span>
+                </div>
+                <p className="text-sm font-medium text-primary">
+                  {formatRegionDisplay(userProfile.region || 'us')}
+                </p>
               </div>
             </div>
           </div>
         </div>
-      </GlassContainer>
+      </div>
 
-      {/* Subscription Modal */}
+      {/* Premium Subscription Modal */}
       <AnimatePresence>
         {isSubscriptionModalOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

@@ -2,13 +2,14 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { useLocale } from 'next-intl';
 import { 
   Home, Receipt, Target, TrendingUp, User, Calculator,
-  Plus, Wallet, PiggyBank, CreditCard, Building2, Camera
+  Plus, Wallet, PiggyBank, CreditCard, Building2, Camera, Sparkles
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/lib/firebase/auth-context';
+import { OwoAIModal } from '@/components/features/OwoAIModal';
+import { OwoAIFloatButton } from '@/components/features/OwoAIFloatButton';
 
 interface NavItem {
   id: string;
@@ -29,23 +30,26 @@ const navItems: NavItem[] = [
 export function BottomNavigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const locale = useLocale();
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [showAIAdvisor, setShowAIAdvisor] = useState(false);
+  const { user, loading, userProfile } = useAuth();
+  const isPremium = !!userProfile?.aiSettings?.enabled && userProfile?.aiSettings?.features?.insights;
+  const userName = userProfile?.firstName || userProfile?.displayName || userProfile?.email?.split('@')[0] || '';
   
   // Get auth state
-  let user = null;
-  let loading = false;
+  let authUser = null;
+  let authLoading = false;
   try {
     const auth = useAuth();
-    user = auth.user;
-    loading = auth.loading;
+    authUser = auth.user;
+    authLoading = auth.loading;
   } catch (e) {
     // Auth context not available, don't show navigation
     return null;
   }
 
   // Remove locale from pathname for comparison
-  const currentPath = pathname?.replace(`/${locale}`, '') || '/dashboard';
+  const currentPath = pathname || '/dashboard';
 
   const isRouteActive = (route: string): boolean => {
     if (route === '/dashboard' && currentPath === '') return true;
@@ -53,7 +57,7 @@ export function BottomNavigation() {
   };
 
   const handleNavigation = (path: string) => {
-    router.push(`/${locale}${path}`);
+    router.push(path);
   };
 
   // Don't show bottom nav on auth pages, onboarding, or landing page
@@ -68,7 +72,7 @@ export function BottomNavigation() {
   }
 
   // Don't show navigation if user is not authenticated
-  if (!user && !loading) {
+  if (!authUser && !authLoading) {
     return null;
   }
 
@@ -198,7 +202,7 @@ export function BottomNavigation() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
-                    router.push(`/${locale}/transactions/new?type=income`);
+                    router.push('/transactions/new?type=income');
                     setShowQuickAdd(false);
                   }}
                   className="glass-subtle p-5 rounded-2xl hover:bg-white/60 transition-all group border border-transparent hover:border-gold/20"
@@ -215,7 +219,7 @@ export function BottomNavigation() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
-                    router.push(`/${locale}/transactions/new?type=expense`);
+                    router.push('/transactions/new?type=expense');
                     setShowQuickAdd(false);
                   }}
                   className="glass-subtle p-5 rounded-2xl hover:bg-white/60 transition-all group border border-transparent hover:border-gold/20"
@@ -228,19 +232,19 @@ export function BottomNavigation() {
                   </div>
                 </motion.button>
 
-                {/* Scan Receipt & Set Goal */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    router.push(`/${locale}/transactions/new?type=expense&receipt=true`);
-                    setShowQuickAdd(false);
-                  }}
-                  className="glass-subtle p-5 rounded-2xl hover:bg-white/60 transition-all group border border-transparent hover:border-gold/20"
-                >
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500/90 to-purple-600/90 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
-                      <Camera className="w-5 h-5 text-white" />
+              {/* Scan Receipt & Set Goal */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  router.push('/transactions/new?type=expense&receipt=true');
+                  setShowQuickAdd(false);
+                }}
+                className="glass-subtle p-5 rounded-2xl hover:bg-white/60 transition-all group border border-transparent hover:border-gold/20"
+              >
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500/90 to-purple-600/90 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
+                    <Camera className="w-5 h-5 text-white" />
                     </div>
                     <span className="text-xs font-light text-primary">Scan Receipt</span>
                   </div>
@@ -250,7 +254,7 @@ export function BottomNavigation() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
-                    router.push(`/${locale}/goals`);
+                    router.push('/goals');
                     setShowQuickAdd(false);
                   }}
                   className="glass-subtle p-5 rounded-2xl hover:bg-white/60 transition-all group border border-transparent hover:border-gold/20"
@@ -268,7 +272,7 @@ export function BottomNavigation() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
-                    router.push(`/${locale}/transactions/new?type=asset`);
+                    router.push('/transactions/new?type=asset');
                     setShowQuickAdd(false);
                   }}
                   className="glass-subtle p-5 rounded-2xl hover:bg-white/60 transition-all group border border-transparent hover:border-gold/20"
@@ -285,7 +289,7 @@ export function BottomNavigation() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
-                    router.push(`/${locale}/transactions/new?type=liability`);
+                    router.push('/transactions/new?type=liability');
                     setShowQuickAdd(false);
                   }}
                   className="glass-subtle p-5 rounded-2xl hover:bg-white/60 transition-all group border border-transparent hover:border-gold/20"
@@ -298,12 +302,42 @@ export function BottomNavigation() {
                   </div>
                 </motion.button>
 
+                {/* AI Financial Advisor */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setShowQuickAdd(false);
+                    setShowAIAdvisor(true);
+                  }}
+                  className="glass-subtle p-5 rounded-2xl hover:bg-white/60 transition-all group border border-transparent hover:border-gold/20"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-pink-500/90 to-pink-600/90 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="text-xs font-light text-primary">AI Financial Advisor</span>
+                  </div>
+                </motion.button>
 
               </div>
             </div>
           </motion.div>
         </>
       )}
+
+      {/* AI Financial Advisor Modal */}
+      <OwoAIFloatButton
+        onClick={() => setShowAIAdvisor(true)}
+        isPremium={!!isPremium}
+        isLoggedIn={!!user}
+      />
+      <OwoAIModal
+        isOpen={showAIAdvisor}
+        onClose={() => setShowAIAdvisor(false)}
+        isPremium={!!isPremium}
+        userName={userName}
+      />
 
       {/* Add padding to main content to account for bottom nav */}
       <style jsx global>{`
@@ -330,4 +364,4 @@ export function BottomNavigation() {
       `}</style>
     </>
   );
-} 
+}

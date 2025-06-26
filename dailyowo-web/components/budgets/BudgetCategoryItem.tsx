@@ -11,9 +11,20 @@ interface BudgetCategoryItemProps {
   currency: string;
   onEdit: () => void;
   onDelete: () => void;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
+  showCheckbox?: boolean;
 }
 
-export function BudgetCategoryItem({ category, currency, onEdit, onDelete }: BudgetCategoryItemProps) {
+export function BudgetCategoryItem({ 
+  category, 
+  currency, 
+  onEdit, 
+  onDelete, 
+  isSelected = false, 
+  onToggleSelect, 
+  showCheckbox = false 
+}: BudgetCategoryItemProps) {
   const percentage = category.allocated > 0 
     ? Math.min((category.spent / category.allocated) * 100, 100)
     : 0;
@@ -26,20 +37,30 @@ export function BudgetCategoryItem({ category, currency, onEdit, onDelete }: Bud
   };
 
   return (
-    <GlassContainer className="p-4 hover:shadow-lg transition-shadow">
+    <GlassContainer className={`p-4 hover:shadow-lg transition-shadow ${isSelected ? 'ring-2 ring-gold/50 bg-gold/5' : ''}`}>
       <div className="flex items-center justify-between mb-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h5 className="text-sm font-medium text-primary">{category.name}</h5>
+        <div className="flex items-center gap-3 flex-1">
+          {showCheckbox && (
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={onToggleSelect}
+              className="w-4 h-4 text-gold bg-gray-100 border-gray-300 rounded focus:ring-gold focus:ring-2"
+            />
+          )}
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h5 className="text-sm font-medium text-primary">{category.name}</h5>
             {category.isOverBudget && (
               <span className="text-xs px-2 py-0.5 bg-red-100 text-red-600 rounded-full">
                 Over
               </span>
             )}
+            </div>
+            <p className="text-xs text-primary/60">
+              {formatCurrency(category.spent, { currency })} of {formatCurrency(category.allocated, { currency })}
+            </p>
           </div>
-          <p className="text-xs text-primary/60">
-            {formatCurrency(category.spent, { currency })} of {formatCurrency(category.allocated, { currency })}
-          </p>
         </div>
         
         <div className="flex items-center gap-2">

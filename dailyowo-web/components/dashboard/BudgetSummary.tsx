@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/firebase/auth-context';
-import { useTranslations } from 'next-intl';
 import { GlassContainer } from '@/components/ui/GlassContainer';
 import { calculateBudgetData, Budget, BudgetCategory } from '@/lib/financial-logic/budget-logic';
 import { formatCurrency } from '@/lib/utils/format';
@@ -12,12 +11,9 @@ import { Transaction } from '@/types/transaction';
 import CircularProgress from '@/components/ui/CircularProgress';
 import { motion } from 'framer-motion';
 import { PiggyBank, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
-import { useLocale } from 'next-intl';
 
 export function BudgetSummary() {
   const { user, userProfile } = useAuth();
-  const t = useTranslations('dashboard.budget');
-  const locale = useLocale();
   const [budgetData, setBudgetData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -26,7 +22,7 @@ export function BudgetSummary() {
       if (!user?.uid || !userProfile) return;
 
       try {
-        const db = getFirebaseDb();
+        const db = await getFirebaseDb();
         if (!db) return;
 
         // Fetch current budget
@@ -118,9 +114,9 @@ export function BudgetSummary() {
       <GlassContainer className="p-6">
         <div className="text-center py-8">
           <PiggyBank className="w-16 h-16 text-primary/20 mx-auto mb-4" />
-          <p className="text-primary/60 font-light mb-4">{t('noBudget')}</p>
-          <a href={`/${locale}/budgets`} className="text-gold hover:text-gold-dark transition-colors text-sm">
-            {t('createBudget')} →
+          <p className="text-primary/60 font-light mb-4">You haven't created a budget yet.</p>
+          <a href="/budgets" className="text-gold hover:text-gold-dark transition-colors text-sm">
+            Create a Budget →
           </a>
         </div>
       </GlassContainer>
@@ -141,9 +137,9 @@ export function BudgetSummary() {
   return (
     <GlassContainer className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-sm font-light tracking-wide uppercase text-primary/60">{t('title')}</h3>
-        <a href={`/${locale}/budgets`} className="text-xs text-gold hover:text-gold-dark transition-colors">
-          {t('viewDetails')} →
+        <h3 className="text-sm font-light tracking-wide uppercase text-primary/60">Budget Summary</h3>
+        <a href="/budgets" className="text-xs text-gold hover:text-gold-dark transition-colors">
+          View Details →
         </a>
       </div>
 
@@ -156,14 +152,14 @@ export function BudgetSummary() {
             strokeWidth={5}
           />
           <div className="flex-1">
-            <p className="text-xs text-primary/60">{t('healthScore')}</p>
+            <p className="text-xs text-primary/60">Budget Health</p>
             <p className={`text-sm font-medium ${
               budgetHealth.status === 'excellent' ? 'text-green-600' :
               budgetHealth.status === 'good' ? 'text-blue-600' :
               budgetHealth.status === 'fair' ? 'text-yellow-600' :
               'text-red-600'
             }`}>
-              {budgetHealth.score}% - {t(`status.${budgetHealth.status}`)}
+              {budgetHealth.score}% - {budgetHealth.status.charAt(0).toUpperCase() + budgetHealth.status.slice(1)}
             </p>
           </div>
         </div>
@@ -172,9 +168,9 @@ export function BudgetSummary() {
       {/* Budget Overview */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="space-y-1">
-          <p className="text-xs text-primary/60">{t('allocated')}</p>
+          <p className="text-xs text-primary/60">Allocated</p>
           <p className="text-sm font-medium text-primary">
-            {formatCurrency(totalAllocated, { currency, locale, compact: true })}
+            {formatCurrency(totalAllocated, { currency, locale: 'en-US', compact: true })}
           </p>
           <div className="w-full bg-gray-100 rounded-full h-1.5">
             <div 
@@ -182,13 +178,13 @@ export function BudgetSummary() {
               style={{ width: `${Math.min(allocationPercentage, 100)}%` }}
             />
           </div>
-          <p className="text-xs text-primary/40">{allocationPercentage.toFixed(0)}% {t('ofIncome')}</p>
+          <p className="text-xs text-primary/40">{allocationPercentage.toFixed(0)}% of income</p>
         </div>
 
         <div className="space-y-1">
-          <p className="text-xs text-primary/60">{t('spent')}</p>
+          <p className="text-xs text-primary/60">Spent</p>
           <p className="text-sm font-medium text-primary">
-            {formatCurrency(totalSpent, { currency, locale, compact: true })}
+            {formatCurrency(totalSpent, { currency, locale: 'en-US', compact: true })}
           </p>
           <div className="w-full bg-gray-100 rounded-full h-1.5">
             <div 
@@ -200,7 +196,7 @@ export function BudgetSummary() {
               style={{ width: `${Math.min(spentPercentage, 100)}%` }}
             />
           </div>
-          <p className="text-xs text-primary/40">{spentPercentage.toFixed(0)}% {t('ofBudget')}</p>
+          <p className="text-xs text-primary/40">{spentPercentage.toFixed(0)}% of budget</p>
         </div>
       </div>
 
@@ -210,9 +206,9 @@ export function BudgetSummary() {
           <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5" />
           <div className="flex-1">
             <p className="text-xs font-medium text-amber-800">
-              {formatCurrency(unallocatedAmount, { currency, locale })} {t('unallocated')}
+              {formatCurrency(unallocatedAmount, { currency, locale: 'en-US' })} unallocated
             </p>
-            <p className="text-xs text-amber-700 mt-1">{t('allocateSuggestion')}</p>
+            <p className="text-xs text-amber-700 mt-1">Consider allocating these funds to your goals or savings.</p>
           </div>
         </div>
       )}
@@ -220,7 +216,7 @@ export function BudgetSummary() {
       {/* Top Spending Categories */}
       {topCategories.length > 0 && (
         <div>
-          <h4 className="text-xs font-medium text-primary/60 mb-3">{t('topSpending')}</h4>
+          <h4 className="text-xs font-medium text-primary/60 mb-3">Top Spending Categories</h4>
           <div className="space-y-2">
             {topCategories.map((category: BudgetCategory) => {
               const utilization = (category.spent / category.allocated) * 100;
@@ -248,7 +244,7 @@ export function BudgetSummary() {
                       <TrendingDown className="w-3 h-3 text-green-500" />
                     )}
                     <span className="text-xs font-medium text-primary">
-                      {formatCurrency(category.spent, { currency, locale })} / {formatCurrency(category.allocated, { currency, locale })}
+                      {formatCurrency(category.spent, { currency, locale: 'en-US' })} / {formatCurrency(category.allocated, { currency, locale: 'en-US' })}
                     </span>
                   </div>
                 </motion.div>
@@ -261,7 +257,7 @@ export function BudgetSummary() {
       {/* Budget Suggestions */}
       {budgetHealth.suggestions.length > 0 && (
         <div className="mt-6 pt-6 border-t border-gray-100">
-          <p className="text-xs text-primary/60 mb-2">{t('suggestions')}</p>
+          <p className="text-xs text-primary/60 mb-2">Suggestions</p>
           <ul className="space-y-1">
             {budgetHealth.suggestions.slice(0, 2).map((suggestion: string, index: number) => (
               <li key={index} className="text-xs text-primary/80 flex items-start gap-2">

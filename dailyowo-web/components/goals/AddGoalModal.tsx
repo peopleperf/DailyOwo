@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/lib/firebase/auth-context';
-import { useLocale } from 'next-intl';
+
 import { X, Target, Home, Car, TrendingUp, Heart, Briefcase, Calendar, DollarSign } from 'lucide-react';
 import { GlassContainer } from '@/components/ui/GlassContainer';
 import { formatCurrency } from '@/lib/utils/format';

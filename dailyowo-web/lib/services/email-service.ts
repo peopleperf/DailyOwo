@@ -16,10 +16,14 @@ import MonthlyReportEmail from '@/emails/MonthlyReportEmail';
 import PaymentReminderEmail from '@/emails/PaymentReminderEmail';
 
 // Initialize Resend only if API key is available
+// Resend should only be initialized server-side
 let resend: Resend | null = null;
 
-if (process.env.RESEND_API_KEY) {
-  resend = new Resend(process.env.RESEND_API_KEY);
+if (typeof window === 'undefined') {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (apiKey) {
+    resend = new Resend(apiKey);
+  }
 }
 
 export type EmailTemplate = 
@@ -47,10 +51,45 @@ interface EmailOptions {
  * Send email using Resend
  */
 export async function sendEmail({ to, subject, template, data, userId }: EmailOptions): Promise<boolean> {
-  // Check if Resend is configured
-  if (!resend) {
-    console.warn('Email service not configured. Please set RESEND_API_KEY environment variable.');
+  // Validate required fields
+  if (!to || !subject || !template) {
+    console.error('Missing required email parameters:', { to, subject, template });
     return false;
+  }
+
+  // On client side, use API route
+  if (typeof window !== 'undefined') {
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ to, subject, template, data, userId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to send email via API:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData.error || 'Unknown error'
+        });
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error sending email via API:', error);
+      return false;
+    }
+  }
+
+  // Server-side: Check if Resend is configured
+  if (!resend) {
+    const errorMsg = 'Email service not configured. Please set RESEND_API_KEY environment variable.';
+    console.error(errorMsg);
+    throw new Error(errorMsg);
   }
   
   try {
@@ -218,18 +257,30 @@ export async function sendEmail({ to, subject, template, data, userId }: EmailOp
     const finalSubject = localizedContent.subject || subject;
     
     // Send email
-    const { error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'DailyOwo <noreply@dailyowo.com>',
+    const { data: resendResponse, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'DailyOwo <noreply@mails.dailyowo.com>',
       to,
       subject: finalSubject,
       react: emailComponent,
-      replyTo: process.env.EMAIL_REPLY_TO || 'support@dailyowo.com',
+      replyTo: process.env.EMAIL_REPLY_TO || 'support@mails.dailyowo.com',
     });
     
     if (error) {
-      console.error('Failed to send email:', error);
+      console.error('Failed to send email:', {
+        template,
+        to,
+        error: error.message,
+        details: error
+      });
       return false;
     }
+    
+    console.log('Email sent successfully:', {
+      template,
+      to,
+      id: resendResponse?.id,
+      subject: finalSubject
+    });
     
     console.log(`Email sent successfully: ${template} to ${to}`);
     return true;

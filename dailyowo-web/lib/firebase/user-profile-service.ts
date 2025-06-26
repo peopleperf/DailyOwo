@@ -12,6 +12,11 @@ export interface UserProfile {
   uid: string;
   email: string;
   displayName: string;
+  firstName?: string;
+  lastName?: string;
+  age?: number;
+  bio?: string;
+  onboardingCompleted?: boolean;
   passwordLastChanged: Date;
   twoFactorEnabled: boolean;
   profileCreated: Date;
@@ -23,7 +28,7 @@ class UserProfileService {
    * Get user profile with password metadata
    */
   async getUserProfile(uid: string): Promise<UserProfile | null> {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) throw new Error('Firestore not initialized');
 
     try {
@@ -36,6 +41,11 @@ class UserProfileService {
           uid,
           email: data.email,
           displayName: data.displayName,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          age: data.age,
+          bio: data.bio,
+          onboardingCompleted: data.onboardingCompleted || false,
           passwordLastChanged: data.passwordLastChanged?.toDate() || new Date(),
           twoFactorEnabled: data.twoFactorEnabled || false,
           profileCreated: data.profileCreated?.toDate() || new Date(),
@@ -54,7 +64,7 @@ class UserProfileService {
    * Create initial user profile
    */
   async createUserProfile(uid: string, email: string, displayName: string): Promise<void> {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) throw new Error('Firestore not initialized');
 
     try {
@@ -80,7 +90,7 @@ class UserProfileService {
    * Update password change timestamp
    */
   async updatePasswordChanged(uid: string): Promise<void> {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) throw new Error('Firestore not initialized');
 
     try {
@@ -99,7 +109,7 @@ class UserProfileService {
    * Update 2FA status
    */
   async update2FAStatus(uid: string, enabled: boolean): Promise<void> {
-    const db = getFirebaseDb();
+    const db = await getFirebaseDb();
     if (!db) throw new Error('Firestore not initialized');
 
     try {
@@ -110,6 +120,25 @@ class UserProfileService {
       });
     } catch (error) {
       console.error('Error updating 2FA status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update user profile information
+   */
+  async updateUserProfile(uid: string, updates: Partial<UserProfile>): Promise<void> {
+    const db = await getFirebaseDb();
+    if (!db) throw new Error('Firestore not initialized');
+
+    try {
+      const docRef = doc(db, 'userProfiles', uid);
+      await updateDoc(docRef, {
+        ...updates,
+        profileUpdated: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error updating user profile:', error);
       throw error;
     }
   }
@@ -136,4 +165,4 @@ class UserProfileService {
 }
 
 // Export singleton instance
-export const userProfileService = new UserProfileService(); 
+export const userProfileService = new UserProfileService();
